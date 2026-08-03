@@ -1,0 +1,39 @@
+name: Robot Scraper Subuh
+
+# KAPAN ROBOT INI HARUS BANGUN?
+on:
+  schedule:
+    # Waktu di GitHub memakai jam London (UTC).
+    # Jam 4 Pagi WIB (Jakarta) = Jam 21:00 UTC (Malam sebelumnya).
+    - cron: '0 21 * * *'
+  workflow_dispatch: # Ini memunculkan tombol rahasia agar kita bisa menyalakan robot manual kapan saja
+
+# APA YANG HARUS DILAKUKAN ROBOT?
+jobs:
+  sedot_data_harian:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Memberi robot izin untuk menulis/menyimpan file CSV baru ke dalam gudang kita
+    
+    steps:
+    - name: 1. Buka Pintu Gudang (Checkout)
+      uses: actions/checkout@v3
+
+    - name: 2. Siapkan Mesin Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: 3. Pasang Onderdil (Install Library)
+      run: pip install yfinance pandas pytz
+
+    - name: 4. Tekan Tombol RUN Mesin Scraper!
+      run: python scraper_mesin.py
+
+    - name: 5. Simpan Hasil CSV Kembali ke Gudang
+      run: |
+        git config --global user.name "Robot Scraper"
+        git config --global user.email "robot@github.com"
+        git add thermal_pressure_6mo_history.csv
+        git commit -m "Update data harian otomatis jam 4 Pagi" || exit 0
+        git push
