@@ -34,6 +34,6 @@ jobs:
       run: |
         git config --global user.name "Robot Scraper"
         git config --global user.email "robot@github.com"
-        git add thermal_pressure_6mo_history.csv
+        git add pressure_6mo_history.csv
         git commit -m "Update data harian otomatis jam 4 Pagi" || exit 0
         git push
