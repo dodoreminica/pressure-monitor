@@ -95,6 +95,3 @@ df_pivot.to_csv(nama_file, index=False)
 
 print(f"\n[SUKSES] Data 20 Aset historis telah disimpan menjadi: {nama_file}")
 
-# Tampilkan di layar Colab
-print("\n--- Preview Log Pergerakan Uang (6 Bulan) ---")
-display(df_pivot)
