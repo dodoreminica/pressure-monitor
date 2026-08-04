@@ -1,6 +1,14 @@
 import pandas as pd
 import numpy as np
 import datetime
+import os
+import requests
+
+try:
+    from IPython.display import display
+except ImportError:
+    def display(obj):
+        print(obj)
 
 # ==============================================================================
 # TAHAP 1:  AMBIL DATA DARI SCRAPER_MESIN.PY
