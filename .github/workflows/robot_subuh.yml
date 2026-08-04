@@ -36,7 +36,7 @@ jobs:
         TELEGRAM_CHAT_ID: ${{ secrets.TGRAM_TAG }}
       run: |
         python scraper_mesin.py
-        python analisis_otomatis.py
+        python analisis_auto.py
 
     - name: 5. Simpan Hasil CSV Kembali ke Gudang
       run: |
