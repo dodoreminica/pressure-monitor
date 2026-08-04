@@ -6,18 +6,20 @@ on:
     # Waktu di GitHub memakai jam London (UTC).
     # Jam 4 Pagi WIB (Jakarta) = Jam 21:00 UTC (Malam sebelumnya).
     - cron: '0 21 * * *'
-  workflow_dispatch: # Ini memunculkan tombol rahasia agar kita bisa menyalakan robot manual kapan saja
+  workflow_dispatch: # Ini memunculkan tombol rahasia untuk tes manual
 
 # APA YANG HARUS DILAKUKAN ROBOT?
 jobs:
   sedot_data_harian:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Memberi robot izin untuk menulis/menyimpan file CSV baru ke dalam gudang kita
+      contents: write 
     
     steps:
     - name: 1. Buka Pintu Gudang (Checkout)
       uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: 2. Siapkan Mesin Python
       uses: actions/setup-python@v4
@@ -25,10 +27,16 @@ jobs:
         python-version: '3.10'
 
     - name: 3. Pasang Onderdil (Install Library)
-      run: pip install yfinance pandas pytz
+      run: pip install yfinance pandas pytz requests
 
-    - name: 4. Tekan Tombol RUN Mesin Scraper!
-      run: python scraper_mesin.py
+    - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
+      env:
+        # Menghubungkan brankas GitHub ke kode Python
+        TELEGRAM_TOKEN: ${{ secrets.TGRAM_COUNTER }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TGRAM_TAG }}
+      run: |
+        python scraper_mesin.py
+        python analisis_otomatis.py
 
     - name: 5. Simpan Hasil CSV Kembali ke Gudang
       run: |
