@@ -1,19 +1,15 @@
-import os
-import requests
-
-def kirim_telegram(pesan):
-    token = os.environ.get('TGRAM_COUNTER')
-    chat_id = os.environ.get('TGRAM_TAG')
-    
-    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={pesan}"
-    requests.get(url)
-
 import pandas as pd
 import numpy as np
 import datetime
 
 # ==============================================================================
-# TAHAP 2:  LOGIKA ANALISIS
+# TAHAP 1:  AMBIL DATA DARI SCRAPER_MESIN.PY
+# ==============================================================================
+file_csv = "pressure_6mo_history.csv"
+df_pivot = pd.read_csv(file_csv)
+
+# ==============================================================================
+# TAHAP 2:  LOGIKA MESIN ANALISIS
 # ==============================================================================
 hari_ini_date = datetime.date.today()
 
@@ -75,7 +71,7 @@ print("="*90 + "\n")
 
 
 # ==============================================================================
-# TAHAP 2: MESIN DASHBOARD SPLIT-SCREEN (V4.0)
+# MESIN DASHBOARD SPLIT-SCREEN (V4.0)
 # ==============================================================================
 
 print("Menghitung kalkulasi momentum Smart Money (1D, 1W, 1M, 3M, 6M)...")
@@ -193,8 +189,18 @@ print("=========================================================================
 display(percantik_tabel(df_em_komoditas))
 
 # ==============================================================================
-# TAHAP 3:  KIRIM PESAN KE TGRAM
+# TAHAP 4:  KIRIM PESAN AUTO KE TGRAM
 # ==============================================================================
-pesan_ringkasan = f"🚨 RADAR BOM WAKTU: {ada_bahaya_event}\n🚀 Status Pasar: {tren_singkat}"
+import os
+import requests
+
+def kirim_telegram(pesan):
+    token = os.environ.get('TGRAM_COUNTER')
+    chat_id = os.environ.get('TGRAM_TAG')
+    
+    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={pesan}"
+    requests.get(url)
+    
+    pesan_ringkasan = f"🚨 RADAR BOM WAKTU: {ada_bahaya_event}\n🚀 Status Pasar: {tren_singkat}"
 kirim_telegram(pesan_ringkasan)
 
