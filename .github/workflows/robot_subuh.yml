@@ -88,6 +88,6 @@ jobs:
 
         git add pressure_6mo_history.csv
 
-        git commit -m "Update data harian otomatis jam 4 Pagi" || exit 0
+        git commit -m "Update data harian otomatis jam 5 Pagi" || exit 0
 
         git push
