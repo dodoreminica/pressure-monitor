@@ -89,7 +89,7 @@ df_pivot.columns.name = None
 df_pivot.index.name = 'baris' 
 
 # NAMA FILE DIUBAH AGAR SESUAI DENGAN ISINYA (1 TAHUN)
-nama_file = "pressure_1y_history.csv"
+nama_file = "pressure_6mo_history.csv"
 df_pivot.to_csv(nama_file, index=False)
 
 print(f"\n[SUKSES] Data 20 Aset historis (1 Tahun) telah disimpan menjadi: {nama_file}")
