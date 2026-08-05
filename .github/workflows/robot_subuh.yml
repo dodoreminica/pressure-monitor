@@ -5,8 +5,9 @@ on:
   schedule:
     # Waktu di GitHub memakai jam London (UTC).
     # Jam 4 Pagi WIB (Jakarta) = Jam 21:00 UTC (Malam sebelumnya).
-    - cron: '0 21 * * *'
-  workflow_dispatch: # Ini memunculkan tombol rahasia untuk tes manual
+- cron: '0 22 * * *'
+workflow_dispatch: # Ini memunculkan tombol rahasia untuk tes manual
+
 
 # APA YANG HARUS DILAKUKAN ROBOT?
 jobs:
@@ -14,34 +15,34 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write 
-    
-    steps:
-    - name: 1. Buka Pintu Gudang (Checkout)
-      uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: 2. Siapkan Mesin Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+steps:
+- name: 1. Buka Pintu Gudang (Checkout)
+  uses: actions/checkout@v3
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: 3. Pasang Onderdil (Install Library)
-      run: pip install yfinance pandas pytz requests ipython jinja2
-      
-    - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
-      env:
-        # Menghubungkan brankas GitHub ke kode Python
-        TELEGRAM_TOKEN: ${{ secrets.TGRAM_COUNTER }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TGRAM_TAG }}
-      run: |
-        python scraper_mesin.py
-        python analisis_auto.py
+- name: 2. Siapkan Mesin Python
+  uses: actions/setup-python@v4
+  with:
+    python-version: '3.10'
 
-    - name: 5. Simpan Hasil CSV Kembali ke Gudang
-      run: |
-        git config --global user.name "Robot Scraper"
-        git config --global user.email "robot@github.com"
-        git add pressure_6mo_history.csv
-        git commit -m "Update data harian otomatis jam 4 Pagi" || exit 0
-        git push
+- name: 3. Pasang Onderdil (Install Library)
+  run: pip install yfinance pandas pytz requests ipython jinja2
+  
+- name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
+  env:
+    # Menghubungkan brankas GitHub ke kode Python
+    TELEGRAM_TOKEN: ${{ secrets.TGRAM_COUNTER }}
+    TELEGRAM_CHAT_ID: ${{ secrets.TGRAM_TAG }}
+  run: |
+    python scraper_mesin.py
+    python analisis_auto.py
+
+- name: 5. Simpan Hasil CSV Kembali ke Gudang
+  run: |
+    git config --global user.name "Robot Scraper"
+    git config --global user.email "robot@github.com"
+    git add pressure_6mo_history.csv
+    git commit -m "Update data harian otomatis jam 5 Pagi" || exit 0
+    git push
