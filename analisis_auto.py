@@ -103,16 +103,35 @@ klaster_us_tech = ['Nasdaq_IXIC', 'Semicon_SOXX', 'Software_IGV', 'CyberSec_CIBR
 df_makro = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_makro)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
 df_us_tech = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_us_tech)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
 
-
 # ==============================================================================
 # TAHAP 4:  KIRIM PESAN AUTO KE TGRAM (SUDAH DIPERBAIKI)
 # ==============================================================================
 
 def kirim_telegram(pesan):
-    token = os.environ.get('TGRAM_COUNTER')
-    chat_id = os.environ.get('TGRAM_TAG')
-    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={pesan}"
-    requests.get(url)
+    # 1. Panggil nama kotak yang benar sesuai di file YML
+    token = os.environ.get('TELEGRAM_TOKEN')
+    chat_id = os.environ.get('TELEGRAM_CHAT_ID')
+    
+    # 2. Cek apakah token dan chat_id berhasil diambil
+    if not token or not chat_id:
+        print("❌ GAGAL: Token atau Chat ID Telegram tidak ditemukan!")
+        return
+
+    # 3. Menggunakan urllib.parse untuk merapikan spasi/enter di pesan
+    import urllib.parse
+    pesan_rapi = urllib.parse.quote(pesan)
+    
+    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={pesan_rapi}"
+    
+    # 4. Tambahkan alat pendeteksi error
+    try:
+        respon = requests.get(url)
+        if respon.status_code == 200:
+            print("✅ SUKSES: Laporan telah dikirim ke Telegram Bos!")
+        else:
+            print(f"❌ GAGAL: Pesan tidak terkirim. Error dari Telegram: {respon.text}")
+    except Exception as e:
+        print(f"❌ ERROR SISTEM: {e}")
 
 # Mengambil peringkat 1 dari Makro dan Tech untuk dikirim ke Telegram
 top_makro = df_makro.iloc[0]['Nama_Aset']
@@ -128,9 +147,9 @@ pesan_final = f"""
 {pesan_bom}
 
 📊 HIGHLIGHT SEKTOR:
+
 - {top_makro} : {status_makro}
 - {top_tech} : {status_tech}
-
 Silakan buka Google Colab untuk melihat 3 Layar Dashboard selengkapnya!
 """
 
