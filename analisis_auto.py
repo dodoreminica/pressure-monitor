@@ -17,7 +17,7 @@ file_csv = "pressure_6mo_history.csv"
 df_pivot = pd.read_csv(file_csv)
 
 # ==============================================================================
-# TAHAP 2:  LOGIKA MESIN ANALISIS (BOM WAKTU MAKRO)
+# TAHAP 2:  LOGIKA MESIN ANALISIS & RADAR BOM WAKTU
 # ==============================================================================
 hari_ini_date = datetime.date.today()
 
@@ -37,21 +37,47 @@ jadwal_bom_waktu = {
     "FOMC (Penentuan Suku Bunga)": cari_tanggal_terdekat(list_fomc)
 }
 
-pesan_bom = "✅ AMAN: Tidak ada bom waktu dalam 7 hari ke depan."
+# Mesin Penghitung Mundur Otomatis
+pesan_bom_list = []
 for event, tanggal in jadwal_bom_waktu.items():
     if tanggal is None:
         continue
+    
     selisih_hari = (tanggal - hari_ini_date).days
+    tgl_str = tanggal.strftime('%d %B %Y')
+    
     if 0 <= selisih_hari <= 7:
-        pesan_bom = f"⚠️ H-STAY AWAY: {event} meledak dalam {selisih_hari} HARI!"
-        break 
+        pesan_bom_list.append(f"⚠️ <b>H-STAY AWAY:</b> {event} meledak dalam {selisih_hari} HARI (Tanggal {tgl_str})!")
+    else:
+        pesan_bom_list.append(f"🟢 <b>AMAN:</b> {event} terdekat masih {selisih_hari} hari lagi (Tanggal {tgl_str}).")
+
+teks_bom_waktu = "\n".join(pesan_bom_list)
+
+# ==============================================================================
+# TAHAP 2.5: RUANG KONFIGURASI DATA MAKRO (Update Sebulan Sekali)
+# ==============================================================================
+# Ubah angka di dalam tanda kutip ini setiap ada rilis data baru dari The Fed / BPS
+makro_us = {
+    "Suku Bunga The Fed (FOMC Rate)": "5.25% - 5.50% (Posisi saat ini, ditahan tinggi)",
+    "Inflasi Tahunan AS (CPI YoY)": "3.0% (Rilis data terakhir, target The Fed 2.0%)",
+    "Pengangguran AS (Unemployment)": "4.1% (Rilis data terakhir, mulai merangkak naik)"
+}
+
+makro_id = {
+    "Suku Bunga Acuan (BI Rate)": "5.75% (Dipertahankan pada RDG Juli 2026)",
+    "Inflasi Tahunan (BPS)": "2.88% (Rilis Agustus 2026 untuk data Juli)",
+    "Pengangguran Terbuka (BPS)": "4.68% atau 7,24 Juta Orang (Data BPS Februari 2026)"
+}
+
+teks_makro_us = "\n".join([f"📌 <b>{k}</b> : {v}" for k, v in makro_us.items()])
+teks_makro_id = "\n".join([f"📌 <b>{k}</b> : {v}" for k, v in makro_id.items()])
+
 
 # ==============================================================================
 # TAHAP 3: MESIN DASHBOARD SPLIT-SCREEN & TREND BACAAN
 # ==============================================================================
 df_angka = df_pivot.select_dtypes(include=np.number)
 
-# Mengambil perbandingan harga
 harga_hari_ini = df_angka.iloc[-1]
 harga_1_hari   = df_angka.iloc[-2]
 harga_1_minggu = df_angka.iloc[-8]
@@ -59,14 +85,12 @@ harga_1_bulan  = df_angka.iloc[-31]
 harga_3_bulan  = df_angka.iloc[-91]
 harga_6_bulan  = df_angka.iloc[0]
 
-# Menghitung Persentase
 pct_1d = ((harga_hari_ini - harga_1_hari) / harga_1_hari) * 100
 pct_1w = ((harga_hari_ini - harga_1_minggu) / harga_1_minggu) * 100
 pct_1m = ((harga_hari_ini - harga_1_bulan) / harga_1_bulan) * 100
 pct_3m = ((harga_hari_ini - harga_3_bulan) / harga_3_bulan) * 100
 pct_6m = ((harga_hari_ini - harga_6_bulan) / harga_6_bulan) * 100
 
-# Merakit df_dashboard Utama
 df_dashboard = pd.DataFrame({
     'Nama_Aset': df_angka.columns,
     'Harga_Sekarang': harga_hari_ini.values,
@@ -99,7 +123,6 @@ def baca_tren_utama(baris):
 
 df_dashboard['Status_Smart_Money'] = df_dashboard.apply(baca_tren_utama, axis=1)
 
-# Memecah Dashboard ke 3 Klaster
 klaster_makro = ['US_10Y_Yield', 'US_2Y_Futures','Gold_XAU', 'VIX_Fear','Bitcoin', 'DXY_Index', 'USD_IDR', 'USD_SGD', 'USD_JPY', 'USD_CNH']
 klaster_us_tech = ['Nasdaq_IXIC', 'Semicon_SOXX', 'Software_IGV', 'CyberSec_CIBR', 'Biotech_IBB', 'Power_XLU', 'Energy_XLE']
 klaster_em_komoditas = ['IHSG_Indo', 'Indo_Foreign_Flow', 'Indeks_Komoditas', 'Minyak_Crude', 'Tembaga_Copper', 'RareEarth_REMX', 'Gas_Alam', 'Minyak_Kedelai']
@@ -135,33 +158,34 @@ def kirim_telegram_post(pesan):
     except Exception as e:
         print(f"❌ ERROR SISTEM: {e}")
 
-# Fungsi Format Baris Telegram (Mencakup 1W, 1M, 3M, 6M)
 def format_baris_telegram(row):
     nama = row['Nama_Aset']
     harga = f"{row['Harga_Sekarang']:,.2f}"
     
-    # Format 1 Minggu & 1 Bulan
     pct_1w = f"+{row['1_Minggu_(%)']:.2f}%" if row['1_Minggu_(%)'] > 0 else f"{row['1_Minggu_(%)']:.2f}%"
     pct_1m = f"+{row['1_Bulan_(%)']:.2f}%" if row['1_Bulan_(%)'] > 0 else f"{row['1_Bulan_(%)']:.2f}%"
-    
-    # Format 3 Bulan & 6 Bulan
     pct_3m = f"+{row['3_Bulan_(%)']:.2f}%" if row['3_Bulan_(%)'] > 0 else f"{row['3_Bulan_(%)']:.2f}%"
     pct_6m = f"+{row['6_Bulan_(%)']:.2f}%" if row['6_Bulan_(%)'] > 0 else f"{row['6_Bulan_(%)']:.2f}%"
-    
     status = row['Status_Smart_Money']
     
-    # Desain UI teks 2 baris agar rapi di layar HP
     return f"🔹 <b>{nama}</b> | {harga}\n   ├ 1W: {pct_1w} | 1M: {pct_1m}\n   ├ 3M: {pct_3m} | 6M: {pct_6m}\n   └ {status}\n"
 
-# Menerapkan Fungsi ke Setiap Klaster
 teks_makro = "\n".join([format_baris_telegram(row) for _, row in df_makro.iterrows()])
 teks_tech = "\n".join([format_baris_telegram(row) for _, row in df_us_tech.iterrows()])
 teks_em = "\n".join([format_baris_telegram(row) for _, row in df_em_komoditas.iterrows()])
 
-# Merakit pesan final
 pesan_final = f"""🤖 <b>LAPORAN PASAR SUBUH</b>
 ======================
-{pesan_bom}
+
+🚨 <b>RADAR BOM WAKTU (KATALIS AS):</b>
+{teks_bom_waktu}
+
+🇺🇸 <b>UPDATE DATA MAKRO AS:</b>
+{teks_makro_us}
+
+🇮🇩 <b>UPDATE DATA MAKRO INDONESIA:</b>
+{teks_makro_id}
+======================
 
 🌍 <b>KLASTER MAKRO & VALAS:</b>
 {teks_makro}
@@ -170,5 +194,4 @@ pesan_final = f"""🤖 <b>LAPORAN PASAR SUBUH</b>
 🇮🇩 <b>EMERGING MARKETS & KOMODITAS:</b>
 {teks_em}"""
 
-# Eksekusi
 kirim_telegram_post(pesan_final)
