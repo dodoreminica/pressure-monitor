@@ -60,15 +60,13 @@ jobs:
 
       
 
-    - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
-
+ - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
       env:
-
-        # Menghubungkan brankas GitHub ke kode Python
-
-        TELEGRAM_TOKEN: ${{ secrets.TGRAM_COUNTER }}
-
-        TELEGRAM_CHAT_ID: ${{ secrets.TGRAM_TAG }}
+        TGRAM_COUNTER: ${{ secrets.TGRAM_COUNTER }}
+        TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
+      run: |
+        python scraper_mesin.py
+        python analisis_auto.py
 
       run: |
 
