@@ -49,7 +49,7 @@ waktu_sekarang = datetime.now(waktu_jakarta).strftime('%Y-%m-%d %H:%M:%S')
 print(f"Memulai pemindaian DISI-TY-VBS-JCX pada: {waktu_sekarang}\n")
 
 for nama_aset, kode_ticker in daftar_aset.items():
-    print(f"Menyedot rekam jejak 1 TAHUN dari: {nama_aset} ({kode_ticker})...")
+    print(f"Menyedot rekam jejak 6 month dari: {nama_aset} ({kode_ticker})...")
     
     try:
         aset = yf.Ticker(kode_ticker)
