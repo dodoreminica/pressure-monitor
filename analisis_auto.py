@@ -109,8 +109,8 @@ df_us_tech = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_us_tech)].sort_
 
 def kirim_telegram(pesan):
     # 1. Panggil nama kotak yang benar sesuai di file YML
-    token = os.environ.get('TELEGRAM_TOKEN')
-    chat_id = os.environ.get('TELEGRAM_CHAT_ID')
+    token = os.environ.get('TGRAM_COUNTER')
+    chat_id = os.environ.get('TGRAM_TAG')
     
     # 2. Cek apakah token dan chat_id berhasil diambil
     if not token or not chat_id:
