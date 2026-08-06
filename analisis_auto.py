@@ -108,9 +108,8 @@ df_makro = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_makro)].sort_valu
 df_us_tech = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_us_tech)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
 df_em_komoditas = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_em_komoditas)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
 
-
 # ==============================================================================
-# TAHAP 4:  KIRIM PESAN AUTO KE TGRAM (VERSI FULL KOMPREHENSIF)
+# TAHAP 4:  KIRIM PESAN AUTO KE TGRAM (VERSI FULL ANGKA & KOMPREHENSIF)
 # ==============================================================================
 def kirim_telegram_post(pesan):
     token = os.environ.get('TGRAM_COUNTER')
@@ -123,7 +122,8 @@ def kirim_telegram_post(pesan):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
         "chat_id": chat_id,
-        "text": pesan
+        "text": pesan,
+        "parse_mode": "HTML"
     }
     
     try:
@@ -135,23 +135,33 @@ def kirim_telegram_post(pesan):
     except Exception as e:
         print(f"❌ ERROR SISTEM: {e}")
 
-# Merakit teks per klaster dengan Loop
-teks_makro = "\n".join([f"- {row['Nama_Aset']} : {row['Status_Smart_Money']}" for _, row in df_makro.iterrows()])
-teks_tech = "\n".join([f"- {row['Nama_Aset']} : {row['Status_Smart_Money']}" for _, row in df_us_tech.iterrows()])
-teks_em = "\n".join([f"- {row['Nama_Aset']} : {row['Status_Smart_Money']}" for _, row in df_em_komoditas.iterrows()])
+# Fungsi Format Baris Telegram
+def format_baris_telegram(row):
+    nama = row['Nama_Aset']
+    harga = f"{row['Harga_Sekarang']:,.2f}"
+    
+    pct_1w = f"+{row['1_Minggu_(%)']:.2f}%" if row['1_Minggu_(%)'] > 0 else f"{row['1_Minggu_(%)']:.2f}%"
+    pct_1m = f"+{row['1_Bulan_(%)']:.2f}%" if row['1_Bulan_(%)'] > 0 else f"{row['1_Bulan_(%)']:.2f}%"
+    status = row['Status_Smart_Money']
+    
+    return f"🔹 <b>{nama}</b> | {harga}\n   ├ 1W: {pct_1w} | 1M: {pct_1m}\n   └ {status}\n"
 
-pesan_final = f"""🤖 LAPORAN PASAR SUBUH
+# Menerapkan Fungsi
+teks_makro = "\n".join([format_baris_telegram(row) for _, row in df_makro.iterrows()])
+teks_tech = "\n".join([format_baris_telegram(row) for _, row in df_us_tech.iterrows()])
+teks_em = "\n".join([format_baris_telegram(row) for _, row in df_em_komoditas.iterrows()])
+
+# Merakit pesan final
+pesan_final = f"""🤖 <b>LAPORAN PASAR SUBUH</b>
 ======================
 {pesan_bom}
 
-🌍 KLASTER MAKRO & VALAS:
+🌍 <b>KLASTER MAKRO & VALAS:</b>
 {teks_makro}
-
-💻 US TECH & INFRASTRUKTUR AI:
+💻 <b>US TECH & INFRASTRUKTUR AI:</b>
 {teks_tech}
+🇮🇩 <b>EMERGING MARKETS & KOMODITAS:</b>
+{teks_em}"""
 
-🇮🇩 EMERGING MARKETS & KOMODITAS:
-{teks_em}
-"""
-
+# Eksekusi
 kirim_telegram_post(pesan_final)
