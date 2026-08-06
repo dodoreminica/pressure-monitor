@@ -135,18 +135,25 @@ def kirim_telegram_post(pesan):
     except Exception as e:
         print(f"❌ ERROR SISTEM: {e}")
 
-# Fungsi Format Baris Telegram
+# Fungsi Format Baris Telegram (Mencakup 1W, 1M, 3M, 6M)
 def format_baris_telegram(row):
     nama = row['Nama_Aset']
     harga = f"{row['Harga_Sekarang']:,.2f}"
     
+    # Format 1 Minggu & 1 Bulan
     pct_1w = f"+{row['1_Minggu_(%)']:.2f}%" if row['1_Minggu_(%)'] > 0 else f"{row['1_Minggu_(%)']:.2f}%"
     pct_1m = f"+{row['1_Bulan_(%)']:.2f}%" if row['1_Bulan_(%)'] > 0 else f"{row['1_Bulan_(%)']:.2f}%"
+    
+    # Format 3 Bulan & 6 Bulan
+    pct_3m = f"+{row['3_Bulan_(%)']:.2f}%" if row['3_Bulan_(%)'] > 0 else f"{row['3_Bulan_(%)']:.2f}%"
+    pct_6m = f"+{row['6_Bulan_(%)']:.2f}%" if row['6_Bulan_(%)'] > 0 else f"{row['6_Bulan_(%)']:.2f}%"
+    
     status = row['Status_Smart_Money']
     
-    return f"🔹 <b>{nama}</b> | {harga}\n   ├ 1W: {pct_1w} | 1M: {pct_1m}\n   └ {status}\n"
+    # Desain UI teks 2 baris agar rapi di layar HP
+    return f"🔹 <b>{nama}</b> | {harga}\n   ├ 1W: {pct_1w} | 1M: {pct_1m}\n   ├ 3M: {pct_3m} | 6M: {pct_6m}\n   └ {status}\n"
 
-# Menerapkan Fungsi
+# Menerapkan Fungsi ke Setiap Klaster
 teks_makro = "\n".join([format_baris_telegram(row) for _, row in df_makro.iterrows()])
 teks_tech = "\n".join([format_baris_telegram(row) for _, row in df_us_tech.iterrows()])
 teks_em = "\n".join([format_baris_telegram(row) for _, row in df_em_komoditas.iterrows()])
