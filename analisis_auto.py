@@ -17,7 +17,7 @@ file_csv = "pressure_6mo_history.csv"
 df_pivot = pd.read_csv(file_csv)
 
 # ==============================================================================
-# TAHAP 2:  LOGIKA MESIN ANALISIS
+# TAHAP 2:  LOGIKA MESIN ANALISIS (BOM WAKTU MAKRO)
 # ==============================================================================
 hari_ini_date = datetime.date.today()
 
@@ -37,7 +37,6 @@ jadwal_bom_waktu = {
     "FOMC (Penentuan Suku Bunga)": cari_tanggal_terdekat(list_fomc)
 }
 
-# --- MESIN PERANGKUM BOM WAKTU UNTUK TELEGRAM ---
 pesan_bom = "✅ AMAN: Tidak ada bom waktu dalam 7 hari ke depan."
 for event, tanggal in jadwal_bom_waktu.items():
     if tanggal is None:
@@ -45,13 +44,14 @@ for event, tanggal in jadwal_bom_waktu.items():
     selisih_hari = (tanggal - hari_ini_date).days
     if 0 <= selisih_hari <= 7:
         pesan_bom = f"⚠️ H-STAY AWAY: {event} meledak dalam {selisih_hari} HARI!"
-        break # Ambil satu yang paling dekat saja untuk Telegram
+        break 
 
 # ==============================================================================
-# TAHAP 3: MESIN DASHBOARD SPLIT-SCREEN
+# TAHAP 3: MESIN DASHBOARD SPLIT-SCREEN & TREND BACAAN
 # ==============================================================================
 df_angka = df_pivot.select_dtypes(include=np.number)
 
+# Mengambil perbandingan harga
 harga_hari_ini = df_angka.iloc[-1]
 harga_1_hari   = df_angka.iloc[-2]
 harga_1_minggu = df_angka.iloc[-8]
@@ -59,12 +59,14 @@ harga_1_bulan  = df_angka.iloc[-31]
 harga_3_bulan  = df_angka.iloc[-91]
 harga_6_bulan  = df_angka.iloc[0]
 
+# Menghitung Persentase
 pct_1d = ((harga_hari_ini - harga_1_hari) / harga_1_hari) * 100
 pct_1w = ((harga_hari_ini - harga_1_minggu) / harga_1_minggu) * 100
 pct_1m = ((harga_hari_ini - harga_1_bulan) / harga_1_bulan) * 100
 pct_3m = ((harga_hari_ini - harga_3_bulan) / harga_3_bulan) * 100
 pct_6m = ((harga_hari_ini - harga_6_bulan) / harga_6_bulan) * 100
 
+# Merakit df_dashboard Utama
 df_dashboard = pd.DataFrame({
     'Nama_Aset': df_angka.columns,
     'Harga_Sekarang': harga_hari_ini.values,
@@ -97,61 +99,59 @@ def baca_tren_utama(baris):
 
 df_dashboard['Status_Smart_Money'] = df_dashboard.apply(baca_tren_utama, axis=1)
 
+# Memecah Dashboard ke 3 Klaster
 klaster_makro = ['US_10Y_Yield', 'US_2Y_Futures','Gold_XAU', 'VIX_Fear','Bitcoin', 'DXY_Index', 'USD_IDR', 'USD_SGD', 'USD_JPY', 'USD_CNH']
 klaster_us_tech = ['Nasdaq_IXIC', 'Semicon_SOXX', 'Software_IGV', 'CyberSec_CIBR', 'Biotech_IBB', 'Power_XLU', 'Energy_XLE']
+klaster_em_komoditas = ['IHSG_Indo', 'Indo_Foreign_Flow', 'Indeks_Komoditas', 'Minyak_Crude', 'Tembaga_Copper', 'RareEarth_REMX', 'Gas_Alam', 'Minyak_Kedelai']
 
 df_makro = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_makro)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
 df_us_tech = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_us_tech)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
+df_em_komoditas = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_em_komoditas)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
+
 
 # ==============================================================================
-# TAHAP 4:  KIRIM PESAN AUTO KE TGRAM (SUDAH DIPERBAIKI)
+# TAHAP 4:  KIRIM PESAN AUTO KE TGRAM (VERSI FULL KOMPREHENSIF)
 # ==============================================================================
-
-def kirim_telegram(pesan):
-    # 1. Panggil nama kotak yang benar sesuai di file YML
+def kirim_telegram_post(pesan):
     token = os.environ.get('TGRAM_COUNTER')
     chat_id = os.environ.get('TGRAM_TAG')
     
-    # 2. Cek apakah token dan chat_id berhasil diambil
     if not token or not chat_id:
         print("❌ GAGAL: Token atau Chat ID Telegram tidak ditemukan!")
         return
 
-    # 3. Menggunakan urllib.parse untuk merapikan spasi/enter di pesan
-    import urllib.parse
-    pesan_rapi = urllib.parse.quote(pesan)
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": pesan
+    }
     
-    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={pesan_rapi}"
-    
-    # 4. Tambahkan alat pendeteksi error
     try:
-        respon = requests.get(url)
+        respon = requests.post(url, data=payload)
         if respon.status_code == 200:
-            print("✅ SUKSES: Laporan telah dikirim ke Telegram Bos!")
+            print("✅ SUKSES: Laporan FULL telah dikirim ke Telegram!")
         else:
             print(f"❌ GAGAL: Pesan tidak terkirim. Error dari Telegram: {respon.text}")
     except Exception as e:
         print(f"❌ ERROR SISTEM: {e}")
 
-# Mengambil peringkat 1 dari Makro dan Tech untuk dikirim ke Telegram
-top_makro = df_makro.iloc[0]['Nama_Aset']
-status_makro = df_makro.iloc[0]['Status_Smart_Money']
+# Merakit teks per klaster dengan Loop
+teks_makro = "\n".join([f"- {row['Nama_Aset']} : {row['Status_Smart_Money']}" for _, row in df_makro.iterrows()])
+teks_tech = "\n".join([f"- {row['Nama_Aset']} : {row['Status_Smart_Money']}" for _, row in df_us_tech.iterrows()])
+teks_em = "\n".join([f"- {row['Nama_Aset']} : {row['Status_Smart_Money']}" for _, row in df_em_komoditas.iterrows()])
 
-top_tech = df_us_tech.iloc[0]['Nama_Aset']
-status_tech = df_us_tech.iloc[0]['Status_Smart_Money']
-
-# Merakit pesan final yang rapi
-pesan_final = f"""
-🤖 LAPORAN PASAR SUBUH
+pesan_final = f"""🤖 LAPORAN PASAR SUBUH
 ======================
 {pesan_bom}
 
-📊 HIGHLIGHT SEKTOR:
+🌍 KLASTER MAKRO & VALAS:
+{teks_makro}
 
-- {top_makro} : {status_makro}
-- {top_tech} : {status_tech}
-Silakan buka Google Colab untuk melihat 3 Layar Dashboard selengkapnya!
+💻 US TECH & INFRASTRUKTUR AI:
+{teks_tech}
+
+🇮🇩 EMERGING MARKETS & KOMODITAS:
+{teks_em}
 """
 
-# Menjalankan fungsi kirim
-kirim_telegram(pesan_final)
+kirim_telegram_post(pesan_final)
