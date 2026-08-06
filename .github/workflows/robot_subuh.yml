@@ -64,10 +64,7 @@ jobs:
       env:
         TGRAM_COUNTER: ${{ secrets.TGRAM_COUNTER }}
         TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
-      run: |
-        python scraper_mesin.py
-        python analisis_auto.py
-
+     
       run: |
 
         python scraper_mesin.py
