@@ -35,7 +35,7 @@ jobs:
         TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
       run: |
         python scraper_mesin.py
-        python analisa_auto.py
+        python analisis_auto.py
 
     - name: 5. Simpan Hasil CSV Kembali ke Gudang
       run: |
