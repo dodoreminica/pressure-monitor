@@ -27,7 +27,7 @@ jobs:
         python-version: '3.10'
 
     - name: 3. Pasang Onderdil (Install Library)
-  run: pip install yfinance pandas pytz requests ipython jinja2 pandas_datareader
+      run: pip install --upgrade yfinance pandas pytz requests urllib3 ipython jinja2 pandas-datareader
       
     - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
       env:
@@ -35,7 +35,7 @@ jobs:
         TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
       run: |
         python scraper_mesin.py
-        python analisis_auto.py
+        python analisa_auto.py
 
     - name: 5. Simpan Hasil CSV Kembali ke Gudang
       run: |
