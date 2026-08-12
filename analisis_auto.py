@@ -3,21 +3,35 @@ import numpy as np
 import datetime
 import os
 import requests
+import warnings
+import pandas_datareader.data as web
 
+warnings.filterwarnings('ignore')
+
+# Trik agar display tabel lokal tidak error di GitHub Actions terminal
 try:
     from IPython.display import display
 except ImportError:
     def display(obj):
-        print(obj)
+        if hasattr(obj, 'data'):
+            print(obj.data.to_string(index=False))
+        else:
+            print(obj)
 
 # ==============================================================================
-# TAHAP 1:  AMBIL DATA DARI SCRAPER_MESIN.PY
+# TAHAP 1: AMBIL DATA DARI SCRAPER_MESIN.PY
 # ==============================================================================
 file_csv = "pressure_6mo_history.csv"
-df_pivot = pd.read_csv(file_csv)
+
+if not os.path.exists(file_csv):
+    print(f"❌ [ERROR FATAL] File {file_csv} tidak ditemukan! Pastikan scraper berjalan.")
+    exit(1)
+
+df_master = pd.read_csv(file_csv)
+df_pivot = df_master.copy()
 
 # ==============================================================================
-# TAHAP 2:  LOGIKA MESIN ANALISIS & RADAR BOM WAKTU
+# TAHAP 2: LOGIKA MESIN ANALISIS & RADAR BOM WAKTU
 # ==============================================================================
 hari_ini_date = datetime.date.today()
 
@@ -37,8 +51,11 @@ jadwal_bom_waktu = {
     "FOMC (Penentuan Suku Bunga)": cari_tanggal_terdekat(list_fomc)
 }
 
-# Mesin Penghitung Mundur Otomatis
 pesan_bom_list = []
+print("\n" + "★"*90)
+print("🚨 RADAR BOM WAKTU (KATALIS MAKRO AS) 🚨")
+print("★"*90)
+
 for event, tanggal in jadwal_bom_waktu.items():
     if tanggal is None:
         continue
@@ -47,43 +64,101 @@ for event, tanggal in jadwal_bom_waktu.items():
     tgl_str = tanggal.strftime('%d %B %Y')
     
     if 0 <= selisih_hari <= 7:
-        pesan_bom_list.append(f"⚠️ <b>H-STAY AWAY:</b> {event} meledak dalam {selisih_hari} HARI (Tanggal {tgl_str})!")
+        pesan = f"⚠️ <b>H-STAY AWAY:</b> {event} meledak dalam {selisih_hari} HARI (Tanggal {tgl_str})!"
+        pesan_bom_list.append(pesan)
+        print(pesan.replace("<b>", "").replace("</b>", ""))
     else:
-        pesan_bom_list.append(f"🟢 <b>AMAN:</b> {event} terdekat masih {selisih_hari} hari lagi (Tanggal {tgl_str}).")
+        pesan = f"🟢 <b>AMAN:</b> {event} terdekat masih {selisih_hari} hari lagi (Tanggal {tgl_str})."
+        pesan_bom_list.append(pesan)
+        print(pesan.replace("<b>", "").replace("</b>", ""))
 
+if not pesan_bom_list:
+    pesan_bom_list.append("✅ <b>JALUR BERSIH:</b> Tidak ada bom waktu terdeteksi.")
 teks_bom_waktu = "\n".join(pesan_bom_list)
+print("="*90)
 
 # ==============================================================================
-# TAHAP 2.5: RUANG KONFIGURASI DATA MAKRO (Update Sebulan Sekali)
+# TAHAP 2.5: RUANG KONFIGURASI DATA MAKRO (AUTO-UPDATE FRED API & MANUAL ID)
 # ==============================================================================
-# Ubah angka di dalam tanda kutip ini setiap ada rilis data baru dari The Fed / BPS
-makro_us = {
-    "Suku Bunga The Fed (FOMC Rate)": "5.25% - 5.50% (Posisi saat ini, ditahan tinggi)",
-    "Inflasi Tahunan AS (CPI YoY)": "3.0% (Rilis data terakhir, target The Fed 2.0%)",
-    "Pengangguran AS (Unemployment)": "4.1% (Rilis data terakhir, mulai merangkak naik)"
-}
+print("\nMenarik data Makroekonomi AS terbaru dari server Federal Reserve (FRED)...")
+try:
+    start_d = hari_ini_date - datetime.timedelta(days=730)
+    
+    # 1. Fed Rate
+    df_fed = web.DataReader('FEDFUNDS', 'fred', start_d, hari_ini_date)
+    fed_sekarang = df_fed.iloc[-1, 0]
+    tgl_fed_sekarang = df_fed.index[-1].strftime('%d %b %Y')
+    fed_sebelumnya = df_fed.iloc[-2, 0]
+    tgl_fed_sebelumnya = df_fed.index[-2].strftime('%d %b %Y')
 
+    # 2. Unemployment
+    df_unemp = web.DataReader('UNRATE', 'fred', start_d, hari_ini_date)
+    unemp_sekarang = df_unemp.iloc[-1, 0]
+    tgl_unemp_sekarang = df_unemp.index[-1].strftime('%d %b %Y')
+    unemp_sebelumnya = df_unemp.iloc[-2, 0]
+    tgl_unemp_sebelumnya = df_unemp.index[-2].strftime('%d %b %Y')
+
+    # 3. CPI YoY
+    cpi_data = web.DataReader('CPIAUCSL', 'fred', start_d, hari_ini_date)
+    cpi_sekarang = cpi_data.iloc[-1, 0]
+    tgl_cpi_sekarang = cpi_data.index[-1].strftime('%d %b %Y')
+    
+    cpi_bln_lalu = cpi_data.iloc[-2, 0]
+    tgl_cpi_sebelumnya = cpi_data.index[-2].strftime('%d %b %Y')
+    
+    cpi_thn_lalu = cpi_data.iloc[-13, 0]
+    
+    cpi_yoy_sekarang = ((cpi_sekarang - cpi_thn_lalu) / cpi_thn_lalu) * 100
+    cpi_yoy_sebelumnya = ((cpi_bln_lalu - cpi_data.iloc[-14, 0]) / cpi_data.iloc[-14, 0]) * 100
+
+    makro_us = {
+        "Suku Bunga The Fed": f"{fed_sekarang:.2f}% (Rilis: {tgl_fed_sekarang} | Sebelumnya: {fed_sebelumnya:.2f}% per {tgl_fed_sebelumnya} | Target: 2.00%)",
+        "Inflasi Tahunan (CPI YoY)": f"{cpi_yoy_sekarang:.2f}% (Rilis: {tgl_cpi_sekarang} | Sebelumnya: {cpi_yoy_sebelumnya:.2f}% per {tgl_cpi_sebelumnya} | Target The Fed: 2.00%)",
+        "Pengangguran AS (Unemployment)": f"{unemp_sekarang:.2f}% (Rilis: {tgl_unemp_sekarang} | Sebelumnya: {unemp_sebelumnya:.2f}% per {tgl_unemp_sebelumnya})"
+    }
+
+    print("✅ SUKSES Tarik Data FRED secara Transparan:")
+    for k, v in makro_us.items():
+        print(f"   📌 {k} : {v}")
+
+except Exception as e:
+    print(f"⚠️ GAGAL menarik data FRED: {e}. Menggunakan data cadangan.")
+    makro_us = {
+        "Suku Bunga The Fed (FOMC Rate)": "5.25% - 5.50% (Fallback)",
+        "Inflasi Tahunan AS (CPI YoY)": "3.0% (Fallback | Target: 2.0%)",
+        "Pengangguran AS (Unemployment)": "4.1% (Fallback)"
+    }
+
+# Data Indonesia (Manual dengan catatan)
+catatan_manual_id = "Catatan: Data Indonesia diupdate secara manual (cek berkala ke website resmi BI/BPS)."
 makro_id = {
-    "Suku Bunga Acuan (BI Rate)": "5.75% (Dipertahankan pada RDG Juli 2026)",
-    "Inflasi Tahunan (BPS)": "2.88% (Rilis Agustus 2026 untuk data Juli)",
-    "Pengangguran Terbuka (BPS)": "4.68% atau 7,24 Juta Orang (Data BPS Februari 2026)"
+    "Suku Bunga Acuan (BI Rate)": "5.75% (Rilis RDG Agustus 2026 | Sebelumnya: 6.25% | Target Inflasi BI: 1.5% - 3.5%)",
+    "Inflasi Tahunan (BPS)": "2.88% (Rilis BPS Agustus 2026 untuk data Juli | Sebelumnya: 3.34%)",
+    "Pengangguran Terbuka (BPS)": "4.65% (Rilis BPS Mei 2026 | Sebelumnya: 4.68%)"
 }
 
-teks_makro_us = "\n".join([f"📌 <b>{k}</b> : {v}" for k, v in makro_us.items()])
-teks_makro_id = "\n".join([f"📌 <b>{k}</b> : {v}" for k, v in makro_id.items()])
+print(f"\n🇮🇩 UPDATE DATA MAKRO INDONESIA (Pencarian Manual):")
+print(f"   ⚠️ {catatan_manual_id}")
+for k, v in makro_id.items():
+    print(f"   📌 {k} : {v}")
+
+teks_makro_us = "\n".join([f"📌 <b>{k}</b> :\n   └ {v}" for k, v in makro_us.items()])
+teks_makro_id = f"⚠️ <i>{catatan_manual_id}</i>\n" + "\n".join([f"📌 <b>{k}</b> :\n   └ {v}" for k, v in makro_id.items()])
 
 
 # ==============================================================================
 # TAHAP 3: MESIN DASHBOARD SPLIT-SCREEN & TREND BACAAN
 # ==============================================================================
+print("\nMenghitung kalkulasi momentum Smart Money (1D, 1W, 1M, 3M, 6M)...")
 df_angka = df_pivot.select_dtypes(include=np.number)
+total_baris = len(df_angka)
 
 harga_hari_ini = df_angka.iloc[-1]
-harga_1_hari   = df_angka.iloc[-2]
-harga_1_minggu = df_angka.iloc[-8]
-harga_1_bulan  = df_angka.iloc[-31]
-harga_3_bulan  = df_angka.iloc[-91]
-harga_6_bulan  = df_angka.iloc[0]
+harga_1_hari   = df_angka.iloc[-2]   if total_baris >= 2   else df_angka.iloc[0]
+harga_1_minggu = df_angka.iloc[-8]   if total_baris >= 8   else df_angka.iloc[0]   
+harga_1_bulan  = df_angka.iloc[-31]  if total_baris >= 31  else df_angka.iloc[0]   
+harga_3_bulan  = df_angka.iloc[-91]  if total_baris >= 91  else df_angka.iloc[0]   
+harga_6_bulan  = df_angka.iloc[-181] if total_baris >= 181 else df_angka.iloc[0]   
 
 pct_1d = ((harga_hari_ini - harga_1_hari) / harga_1_hari) * 100
 pct_1w = ((harga_hari_ini - harga_1_minggu) / harga_1_minggu) * 100
@@ -123,7 +198,7 @@ def baca_tren_utama(baris):
 
 df_dashboard['Status_Smart_Money'] = df_dashboard.apply(baca_tren_utama, axis=1)
 
-klaster_makro = ['US_10Y_Yield', 'US_2Y_Futures','Gold_XAU', 'VIX_Fear','Bitcoin', 'DXY_Index', 'USD_IDR', 'USD_SGD', 'USD_JPY', 'USD_CNH']
+klaster_makro = ['US_10Y_Yield', 'US_2Y_Futures','Gold_XAU', 'VIX_Fear','Bitcoin', 'DXY_Index', 'USD_IDR', 'USD_SGD', 'USD_JPY', 'USD_CNY']
 klaster_us_tech = ['Nasdaq_IXIC', 'Semicon_SOXX', 'Software_IGV', 'CyberSec_CIBR', 'Biotech_IBB', 'Power_XLU', 'Energy_XLE']
 klaster_em_komoditas = ['IHSG_Indo', 'Indo_Foreign_Flow', 'Indeks_Komoditas', 'Minyak_Crude', 'Tembaga_Copper', 'RareEarth_REMX', 'Gas_Alam', 'Minyak_Kedelai']
 
@@ -132,7 +207,54 @@ df_us_tech = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_us_tech)].sort_
 df_em_komoditas = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_em_komoditas)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
 
 # ==============================================================================
-# TAHAP 4:  KIRIM PESAN AUTO KE TGRAM (VERSI FULL ANGKA & KOMPREHENSIF)
+# TAHAP 4: ENGINE PEWARNAAN TABEL LOKAL (TERMINAL/JUPYTER)
+# ==============================================================================
+def warnai_baris(row):
+    styles = []
+    nama_aset = row['Nama_Aset']
+
+    for col, val in row.items():
+        if col in ['1_Hari_(%)', '1_Minggu_(%)', '1_Bulan_(%)', '3_Bulan_(%)', '6_Bulan_(%)']:
+            if nama_aset in inverse_assets:
+                if val >= 3: styles.append('color: #FF0000; font-weight: bold; background-color: rgba(255, 0, 0, 0.1)')
+                elif val > 0: styles.append('color: #FF6347')
+                elif val <= -3: styles.append('color: #00FF00; font-weight: bold; background-color: rgba(0, 255, 0, 0.1)')
+                elif val < 0: styles.append('color: #7CFC00')
+                else: styles.append('')
+            else:
+                if val >= 3: styles.append('color: #00FF00; font-weight: bold; background-color: rgba(0, 255, 0, 0.1)')
+                elif val > 0: styles.append('color: #7CFC00')
+                elif val <= -3: styles.append('color: #FF0000; font-weight: bold; background-color: rgba(255, 0, 0, 0.1)')
+                elif val < 0: styles.append('color: #FF6347')
+                else: styles.append('')
+        else:
+            styles.append('')
+    return styles
+
+def percantik_tabel(df):
+    return (df.style.apply(warnai_baris, axis=1).format({
+        'Harga_Sekarang': '{:,.2f}', '1_Hari_(%)': '{:,.2f}%', '1_Minggu_(%)': '{:,.2f}%',
+        '1_Bulan_(%)': '{:,.2f}%', '3_Bulan_(%)': '{:,.2f}%', '6_Bulan_(%)': '{:,.2f}%'
+    }))
+
+print("\n" + "="*90)
+print("🌍 LAYAR 2: MAKROEKONOMI GLOBAL & PASAR UANG (Suku Bunga & Valas)")
+print("==========================================================================================")
+display(percantik_tabel(df_makro))
+
+print("\n" + "="*90)
+print("💻 LAYAR 1: WALL STREET & RANTAI PASOK AI (The Pick and Shovel Play)")
+print("==========================================================================================")
+display(percantik_tabel(df_us_tech))
+
+print("\n" + "="*90)
+print("🇮🇩 LAYAR 3: EMERGING MARKETS & KOMODITAS (Bahan Baku & Sentimen Asia)")
+print("==========================================================================================")
+display(percantik_tabel(df_em_komoditas))
+
+
+# ==============================================================================
+# TAHAP 5: KIRIM PESAN AUTO KE TELEGRAM (FORMAT TEKS BARIS AMAN)
 # ==============================================================================
 def kirim_telegram_post(pesan):
     token = os.environ.get('TGRAM_COUNTER')
