@@ -1,0 +1,43 @@
+name: IHSG Auto Scraper (Pagi & Siang)
+
+on:
+  schedule:
+    # 1. Jadwal Pagi (Jam 08:00 WIB) - Senin s/d Jumat
+    - cron: '0 1 * * 1-5'
+    
+    # 2. Jadwal Siang (Jam 13:00 WIB) - Senin s/d Jumat
+    - cron: '0 6 * * 1-5'
+    
+  workflow_dispatch: # Mengizinkan Anda menjalankan manual kapan saja via tombol Run
+
+jobs:
+  scrape-and-save:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write # Wajib agar bot diizinkan menyimpan file CSV ke repository
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10' 
+
+    - name: Install Dependencies
+      run: |
+        pip install pandas numpy requests beautifulsoup4 lxml html5lib
+        
+    - name: Eksekusi Mesin Scraping
+      run: |
+        python pressure-monitor/ind_scraper_mesin.py
+        
+    - name: Simpan (Commit & Push) Hasil CSV ke GitHub
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add *.csv
+        git commit -m "🤖 Auto-update data IHSG CSV" || echo "Tidak ada perubahan data"
+        git push
