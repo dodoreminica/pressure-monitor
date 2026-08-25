@@ -6,7 +6,6 @@ import random
 import io
 import re
 from bs4 import BeautifulSoup
-from IPython.display import display, HTML
 
 print("📥 TAHAP 1: EKSTRAKSI DATA MULTI-DIMENSI (CSA, TECHNICAL & DIVIDEND)")
 print("-" * 130)
