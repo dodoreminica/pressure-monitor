@@ -8,14 +8,14 @@ on:
     # 2. Jadwal Siang (Jam 13:00 WIB) - Senin s/d Jumat
     - cron: '0 6 * * 1-5'
     
-  workflow_dispatch: # Mengizinkan Anda menjalankan manual kapan saja via tombol Run
+  workflow_dispatch: 
 
 jobs:
   scrape-and-save:
     runs-on: ubuntu-latest
     
     permissions:
-      contents: write # Wajib agar bot diizinkan menyimpan file CSV ke repository
+      contents: write 
 
     steps:
     - name: Checkout Repository
@@ -30,9 +30,10 @@ jobs:
       run: |
         pip install pandas numpy requests beautifulsoup4 lxml html5lib
         
+    # --- BAGIAN YANG DIPERBAIKI (Hapus 'pressure-monitor/') ---
     - name: Eksekusi Mesin Scraping
       run: |
-        python pressure-monitor/ind_scraper_mesin.py
+        python ind_scraper_mesin.py
         
     - name: Simpan (Commit & Push) Hasil CSV ke GitHub
       run: |
