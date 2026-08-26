@@ -233,9 +233,9 @@ daftar_saham = {
     # -----------------------------------------------------
     # 1. SEKTOR ENERGI (Minyak, Gas, Batu Bara & Jasa Pendukung)
     # -----------------------------------------------------
-    "AADI": "NOV", "ADRO": "MAY & DEC", "AKRA": "MAY & AUG", "BSSR": "JUN & NOV",
-    "BUMI": "-", "BYAN": "DEC", "ELSA": "JUN", "ENRG": "-", "GEMS": "JUN",
-    "INDY": "MAY", "ITMG": "APR & NOV", "KKGI": "JUN & DEC", "MCOL": "MAY & NOV",
+    "AADI": "JUN & NOV", "ADRO": "MAY & DEC", "AKRA": "MAY & AUG", "BSSR": "JAN & JUN & NOV",
+    "BUMI": "-", "BYAN": "JUN / DEC", "ELSA": "JUN", "ENRG": "-", "GEMS": "JUN",
+    "INDY": "JUN / MAY", "ITMG": "APR & NOV", "KKGI": "JUN & DEC", "MCOL": "MAY & NOV",
     "MEDC": "JUN & NOV", "MYOH": "JUN", "PTBA": "JUN", "SICO": "APR & NOV /DEC", "TOBA": "MAY",
 
     # -----------------------------------------------------
@@ -246,7 +246,8 @@ daftar_saham = {
     "GDST": "JUN & DEC LAST 2024", "GGRP": "JUN", "INCO": "MAY", "INKP": "JUN", "INTP": "MAY",
     "ISSP": "JUL", "MBMA": "-", "MDKA": "-", "MINE": "-", "NCKL": "JUN",
     "NICL": "MAY / JUN & AUG & NOV /DEC", "PBID": "MAY / JUN", "PSAB": "JUN/JUL",
-    "SAMF": "JUN", "SMGR": "MAY", "SRSN": "JUN / JUL", "TINS": "JUN", "TKIM": "JUN", "TPIA": "JUN",
+    "SAMF": "JUN", "SMGR": "MAY", "SRSN": "JUN / JUL", "TINS": "JUN", "TKIM": "JUN", "TPIA": "JUN", 
+    "BLES": "JUN / JUL", "DGWG": "-", "FPNI": "-", "PART": "-", "SMGA": "-",
 
     # -----------------------------------------------------
     # 3. SEKTOR PERINDUSTRIAN (Alat Berat, Mesin, Jasa Industri)
@@ -254,6 +255,7 @@ daftar_saham = {
     "ABMM": "MAY", "ASII": "MAY & OCT", "HEXA": "SEP / OCT", "JTPE": "JUN & NOV",
     "KBLI": "MAY & AUG", "KUAS": "JUN / MAY", "MSJA": "JUN", "PBSA": "JUN",
     "SCCO": "JUN", "SKRN": "MAY / JUN & NOV", "TOTL": "MAY", "UNTR": "MAY & OCT",
+    "CARS": "-", "GJTL": "JUN / JUL", "MPPA": "-",
 
     # -----------------------------------------------------
     # 4. KONSUMEN PRIMER (FMCG, Rokok, Sawit, Makanan)
@@ -263,6 +265,7 @@ daftar_saham = {
     "JPFA": "APR", "LSIP": "JUL", "MIDI": "MAY", "MLBI": "MAY / JUN & NOV", "MYOR": "MAY",
     "NSSS": "NOV", "PNGO": "JUN & NOV", "ROTI": "APR", "TAPG": "MAY & NOV",
     "TBLA": "JUN", "TLDN": "MAY & OCT", "WIIM": "JUN", "YUPI": "JUL & DEC",
+    "BWPT": "-", "GZCO": "-", "SIMP": "JUL", "STAA": "MAY & OCT",
 
     # -----------------------------------------------------
     # 5. KONSUMEN NON-PRIMER (Ritel, Otomotif, Perabot, Media, Hotel)
@@ -284,7 +287,7 @@ daftar_saham = {
     # -----------------------------------------------------
     "ADMF": "MAY", "AMAG": "MAY", "ASDM": "JUL", "BBCA": "MAR & DEC", "BBNI": "MAR",
     "BBRI": "MAR", "BBTN": "MAR", "BDMN": "APR", "BFIN": "MAY & NOV", "BMRI": "MAR",
-    "BRIS": "MAY", "DNAR": "-", "NISP": "APR", "PANS": "JUL",
+    "BRIS": "MAY", "DNAR": "-", "NISP": "APR", "PANS": "JUL", "BBYB": "-", "SRTG": "MAY",
 
     # -----------------------------------------------------
     # 8. PROPERTI & REAL ESTAT (Pengembang Properti & Kawasan)
@@ -302,13 +305,14 @@ daftar_saham = {
     # -----------------------------------------------------
     "CBDK": "MAY", "EXCL": "MAY", "ISAT": "MAY", "JKON": "JUN", "JSMR": "MAY",
     "PGAS": "JUN", "PGEO": "JUN", "POWR": "MAY & DEC", "TBIG": "MAY & DEC",
-    "TLKM": "JUN", "TOWR": "MAY & DEC",
+    "TLKM": "JUN", "TOWR": "MAY & DEC", "NRCA": "MAY",
 
     # -----------------------------------------------------
     # 11. TRANSPORTASI & LOGISTIK (Pengiriman & Maritim)
     # -----------------------------------------------------
     "ASSA": "JUN", "HAIS": "APR", "IPCC": "JUN & DEC", "IPCM": "JUN & DEC",
-    "MAHA": "MAY", "NELY": "JUN & DEC", "SMDR": "JUL", "TEBE": "-", "TMAS": "MAY", "TPMA": "MAY"
+    "MAHA": "MAY", "NELY": "JUN & DEC", "SMDR": "JUL", "TEBE": "-", "TMAS": "MAY", "TPMA": "MAY",
+    "BBRM": "-", "BOAT": "-", "BULL": "-",
 }
 
 list_A, list_B, list_C, list_D = [], [], [], []
