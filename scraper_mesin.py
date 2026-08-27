@@ -34,7 +34,8 @@ daftar_aset = {
     'USD_SGD': 'USDSGD=X',
     'USD_IDR': 'USDIDR=X',
     'USD_JPY': 'USDJPY=X',
-    'USD_CNY': 'USDCNY=X',   # FIX: Menggunakan format ticker standar YF agar tidak NaN
+    'JPY/IDR': 'JPYIDR=X',
+    'USD_CNY': 'USDCNY=X',
     'IHSG_Indo': '^JKSE',
     'Indo_Foreign_Flow': 'EIDO',
 
