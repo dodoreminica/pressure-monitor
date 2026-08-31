@@ -305,7 +305,7 @@ daftar_saham = {
     # -----------------------------------------------------
     "CBDK": "MAY", "EXCL": "MAY", "ISAT": "MAY", "JKON": "JUN", "JSMR": "MAY",
     "PGAS": "JUN", "PGEO": "JUN", "POWR": "MAY & DEC", "TBIG": "MAY & DEC",
-    "TLKM": "JUN", "TOWR": "MAY & DEC", "NRCA": "MAY",
+    "TLKM": "JUN", "TOWR": "MAY & DEC", "NRCA": "MAY", "CDIA": "MAY",
 
     # -----------------------------------------------------
     # 11. TRANSPORTASI & LOGISTIK (Pengiriman & Maritim)
