@@ -41,7 +41,9 @@ daftar_aset = {
 
     # --- KLASTER KOMODITAS & BAHAN BAKU AI ---
     'Gold_XAU': 'GC=F',
-    'Minyak_Crude': 'CL=F',
+    'Minyak_Crude_WTI': 'CL=F',   # Minyak Mentah AS (Sudah ada, nama diperjelas)
+    'Minyak_Brent': 'BZ=F',       # Minyak Mentah Global (Tambahan Baru)
+    'Batu_Bara': 'MTF=F',         # Batu Bara Rotterdam / Global Proxy (Tambahan Baru)
     'Tembaga_Copper': 'HG=F',
     'RareEarth_REMX': 'REMX',
     'Gas_Alam': 'NG=F',
