@@ -304,8 +304,7 @@ daftar_saham = {
     # 10. INFRASTRUKTUR (Telekomunikasi, Tol, Menara, Konstruksi)
     # -----------------------------------------------------
     "CBDK": "MAY", "EXCL": "MAY", "ISAT": "MAY", "JKON": "JUN", "JSMR": "MAY",
-    "PGAS": "JUN", "PGEO": "JUN", "POWR": "MAY & DEC", "TBIG": "MAY & DEC",
-    "TLKM": "JUN", "TOWR": "MAY & DEC", "NRCA": "MAY", "CDIA": "MAY", "INET": "-",
+    "PGAS": "JUN", "PGEO": "JUN", "POWR": "MAY & DEC", "NRCA": "MAY", "CDIA": "MAY", "INET": "-",
 
     # -----------------------------------------------------
     # 11. TRANSPORTASI & LOGISTIK (Pengiriman & Maritim)
@@ -313,6 +312,18 @@ daftar_saham = {
     "ASSA": "JUN", "HAIS": "APR", "IPCC": "JUN & DEC", "IPCM": "JUN & DEC",
     "MAHA": "MAY", "NELY": "JUN & DEC", "SMDR": "JUL", "TEBE": "-", "TMAS": "MAY", "TPMA": "MAY",
     "BBRM": "-", "BOAT": "-", "BULL": "-",
+
+  # -----------------------------------------------------
+    # 11. INFRASTRUKTUR TELEKOMUNIKASI & DATA CENTER (AI & Jaringan)
+    # -----------------------------------------------------
+    # Pilar Data Center & Cloud
+    "DCII": "-", "DSSA": "-", "EDGE": "-", "INET": "-", "MGLV": "-",
+    # Operator Telekomunikasi Utama
+    "EXCL": "MAY", "FREN": "-", "ISAT": "MAY", "TLKM": "JUN", 
+    # Raja Menara & Jaringan Fiber Optik
+    "LINK": "-", "MORA": "-", "MTEL": "MAY", "TBIG": "MAY & DEC", "TOWR": "MAY & DEC",
+    # Pendukung Hardware & Solusi IT
+    "GLVA": "MAY", "MLPT": "JUN",
 }
 
 list_A, list_B, list_C, list_D = [], [], [], []
