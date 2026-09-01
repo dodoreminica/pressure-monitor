@@ -303,8 +303,7 @@ daftar_saham = {
     # -----------------------------------------------------
     # 10. INFRASTRUKTUR (Telekomunikasi, Tol, Menara, Konstruksi)
     # -----------------------------------------------------
-    "CBDK": "MAY", "EXCL": "MAY", "ISAT": "MAY", "JKON": "JUN", "JSMR": "MAY",
-    "PGAS": "JUN", "PGEO": "JUN", "POWR": "MAY & DEC", "NRCA": "MAY", "CDIA": "MAY", "INET": "-",
+    "CBDK": "MAY",  "JKON": "JUN", "JSMR": "MAY", "PGAS": "JUN", "PGEO": "JUN", "POWR": "MAY & DEC", "NRCA": "MAY", "CDIA": "MAY",
 
     # -----------------------------------------------------
     # 11. TRANSPORTASI & LOGISTIK (Pengiriman & Maritim)
