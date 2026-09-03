@@ -322,7 +322,7 @@ daftar_saham = {
     # Raja Menara & Jaringan Fiber Optik
     "LINK": "-", "MORA": "-", "MTEL": "MAY", "TBIG": "MAY & DEC", "TOWR": "MAY & DEC",
     # Pendukung Hardware & Solusi IT
-    "GLVA": "MAY", "MLPT": "JUN",
+    "GLVA": "MAY", "MLPT": "JUN", "KETR": "-",
 }
 
 list_A, list_B, list_C, list_D = [], [], [], []
