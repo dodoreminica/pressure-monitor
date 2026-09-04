@@ -84,21 +84,18 @@ print("\nMenarik data Makroekonomi AS terbaru dari server Federal Reserve (FRED)
 try:
     start_d = hari_ini_date - datetime.timedelta(days=730)
     
-    # 1. Fed Rate
     df_fed = web.DataReader('FEDFUNDS', 'fred', start_d, hari_ini_date)
     fed_sekarang = df_fed.iloc[-1, 0]
     tgl_fed_sekarang = df_fed.index[-1].strftime('%d %b %Y')
     fed_sebelumnya = df_fed.iloc[-2, 0]
     tgl_fed_sebelumnya = df_fed.index[-2].strftime('%d %b %Y')
 
-    # 2. Unemployment
     df_unemp = web.DataReader('UNRATE', 'fred', start_d, hari_ini_date)
     unemp_sekarang = df_unemp.iloc[-1, 0]
     tgl_unemp_sekarang = df_unemp.index[-1].strftime('%d %b %Y')
     unemp_sebelumnya = df_unemp.iloc[-2, 0]
     tgl_unemp_sebelumnya = df_unemp.index[-2].strftime('%d %b %Y')
 
-    # 3. CPI YoY
     cpi_data = web.DataReader('CPIAUCSL', 'fred', start_d, hari_ini_date)
     cpi_sekarang = cpi_data.iloc[-1, 0]
     tgl_cpi_sekarang = cpi_data.index[-1].strftime('%d %b %Y')
@@ -129,7 +126,6 @@ except Exception as e:
         "Pengangguran AS (Unemployment)": "4.1% (Fallback)"
     }
 
-# Data Indonesia (Manual dengan catatan)
 catatan_manual_id = "Catatan: Data Indonesia diupdate secara manual (cek berkala ke website resmi BI/BPS)."
 makro_id = {
     "Suku Bunga Acuan (BI Rate)": "5.75% (Rilis RDG Agustus 2026 | Sebelumnya: 6.25% | Target Inflasi BI: 1.5% - 3.5%)",
@@ -153,12 +149,13 @@ print("\nMenghitung kalkulasi momentum Smart Money (1D, 1W, 1M, 3M, 6M)...")
 df_angka = df_pivot.select_dtypes(include=np.number)
 total_baris = len(df_angka)
 
-harga_hari_ini = df_angka.iloc[-1]
-harga_1_hari   = df_angka.iloc[-2]   if total_baris >= 2   else df_angka.iloc[0]
-harga_1_minggu = df_angka.iloc[-8]   if total_baris >= 8   else df_angka.iloc[0]   
-harga_1_bulan  = df_angka.iloc[-31]  if total_baris >= 31  else df_angka.iloc[0]   
-harga_3_bulan  = df_angka.iloc[-91]  if total_baris >= 91  else df_angka.iloc[0]   
-harga_6_bulan  = df_angka.iloc[-181] if total_baris >= 181 else df_angka.iloc[0]   
+# PERBAIKAN LOGIKA INDEXING (Karena data sudah dibalik: Hari ini = Baris 0)
+harga_hari_ini = df_angka.iloc[0]
+harga_1_hari   = df_angka.iloc[1]   if total_baris > 1   else df_angka.iloc[-1]
+harga_1_minggu = df_angka.iloc[7]   if total_baris > 7   else df_angka.iloc[-1]   
+harga_1_bulan  = df_angka.iloc[30]  if total_baris > 30  else df_angka.iloc[-1]   
+harga_3_bulan  = df_angka.iloc[90]  if total_baris > 90  else df_angka.iloc[-1]   
+harga_6_bulan  = df_angka.iloc[180] if total_baris > 180 else df_angka.iloc[-1]   
 
 pct_1d = ((harga_hari_ini - harga_1_hari) / harga_1_hari) * 100
 pct_1w = ((harga_hari_ini - harga_1_minggu) / harga_1_minggu) * 100
@@ -198,9 +195,10 @@ def baca_tren_utama(baris):
 
 df_dashboard['Status_Smart_Money'] = df_dashboard.apply(baca_tren_utama, axis=1)
 
-klaster_makro = ['US_10Y_Yield', 'US_2Y_Futures','Gold_XAU', 'VIX_Fear','Bitcoin', 'DXY_Index', 'USD_IDR', 'USD_SGD', 'USD_JPY', 'USD_CNY']
+# UPDATE KLASTER DENGAN NAMA ASET TERBARU
+klaster_makro = ['US_10Y_Yield', 'US_2Y_Futures','VIX_Fear','Bitcoin', 'DXY_Index', 'USD_IDR', 'USD_SGD', 'USD_JPY', 'JPY_IDR', 'USD_CNY']
 klaster_us_tech = ['Nasdaq_IXIC', 'Semicon_SOXX', 'Software_IGV', 'CyberSec_CIBR', 'Biotech_IBB', 'Power_XLU', 'Energy_XLE']
-klaster_em_komoditas = ['IHSG_Indo', 'Indo_Foreign_Flow', 'Indeks_Komoditas', 'Minyak_Crude', 'Tembaga_Copper', 'RareEarth_REMX', 'Gas_Alam', 'Minyak_Kedelai']
+klaster_em_komoditas = ['IHSG_Indo', 'Indo_Foreign_Flow', 'Indeks_Komoditas', 'Gold_XAU_USD', 'Gold_XAU_IDR', 'Minyak_Bumi_WTI', 'Minyak_Bumi_Brent', 'Minyak_Sawit_CPO', 'Batu_Bara', 'Tembaga_Copper', 'RareEarth_REMX', 'Gas_Alam', 'Minyak_Kedelai']
 
 df_makro = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_makro)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
 df_us_tech = df_dashboard[df_dashboard['Nama_Aset'].isin(klaster_us_tech)].sort_values(by='1_Bulan_(%)', ascending=False).reset_index(drop=True)
