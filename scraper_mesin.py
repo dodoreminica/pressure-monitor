@@ -136,8 +136,11 @@ kolom_ekstra = []
 if 'JPY_IDR' in df_master.columns: kolom_ekstra.append('JPY_IDR')
 if 'Gold_XAU_IDR' in df_master.columns: kolom_ekstra.append('Gold_XAU_IDR')
 
-kolom_urut = ['Timestamp_Mesin', 'Tanggal_Pasar'] + list(daftar_aset.keys()) + kolom_ekstra
-df_master = df_master[kolom_urut]
+# 👇👇👇 PERBAIKAN ANTI-ERROR (Filter Kolom Aman) 👇👇👇
+kolom_urut_target = ['Timestamp_Mesin', 'Tanggal_Pasar'] + list(daftar_aset.keys()) + kolom_ekstra
+kolom_urut_aman = [col for col in kolom_urut_target if col in df_master.columns]
+df_master = df_master[kolom_urut_aman]
+# 👆👆👆 ======================================== 👆👆👆
 
 nama_file = "pressure_6mo_history.csv"
 df_master.to_csv(nama_file, index=False)
@@ -153,13 +156,17 @@ print("="*90)
 
 klaster_makro = ['Tanggal_Pasar', 'US_10Y_Yield', 'US_2Y_Futures','VIX_Fear','Bitcoin', 'DXY_Index', 'USD_IDR', 'USD_SGD', 'USD_JPY', 'JPY_IDR', 'USD_CNY']
 klaster_us_tech = ['Tanggal_Pasar', 'Nasdaq_IXIC', 'Semicon_SOXX', 'Software_IGV', 'CyberSec_CIBR', 'Biotech_IBB', 'Power_XLU', 'Energy_XLE']
-
-# Memasukkan seluruh komoditas (Energi & Pangan) dengan nama yang sudah disamakan persis
 klaster_em_komoditas = ['Tanggal_Pasar', 'IHSG_Indo', 'Indo_Foreign_Flow', 'Indeks_Komoditas', 'Gold_XAU_USD', 'Gold_XAU_IDR', 'Minyak_Bumi_WTI', 'Minyak_Bumi_Brent', 'Minyak_Sawit_CPO', 'Batu_Bara', 'Tembaga_Copper', 'RareEarth_REMX', 'Gas_Alam', 'Minyak_Kedelai']
 
-df_makro = df_master[klaster_makro]
-df_us_tech = df_master[klaster_us_tech]
-df_em_komoditas = df_master[klaster_em_komoditas]
+# 👇👇👇 PERBAIKAN ANTI-ERROR (Hanya memotong tabel jika kolomnya ada) 👇👇👇
+klaster_makro_aman = [c for c in klaster_makro if c in df_master.columns]
+klaster_us_tech_aman = [c for c in klaster_us_tech if c in df_master.columns]
+klaster_em_komoditas_aman = [c for c in klaster_em_komoditas if c in df_master.columns]
+
+df_makro = df_master[klaster_makro_aman]
+df_us_tech = df_master[klaster_us_tech_aman]
+df_em_komoditas = df_master[klaster_em_komoditas_aman]
+# 👆👆👆 ============================================================ 👆👆👆
 
 # Menggunakan .head(5) karena data sudah dibalik (yang terbaru di atas)
 print("\n🌍 TABEL 1: MAKROEKONOMI & VALAS (Menampilkan 5 hari terakhir)")
