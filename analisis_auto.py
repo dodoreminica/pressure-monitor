@@ -252,7 +252,7 @@ display(percantik_tabel(df_em_komoditas))
 
 
 # ==============================================================================
-# TAHAP 5: KIRIM PESAN AUTO KE TELEGRAM (FORMAT TEKS BARIS AMAN)
+# TAHAP 5: KIRIM PESAN AUTO KE TELEGRAM (FORMAT SPLIT ANTI-LIMIT)
 # ==============================================================================
 def kirim_telegram_post(pesan):
     token = os.environ.get('TGRAM_COUNTER')
@@ -272,7 +272,7 @@ def kirim_telegram_post(pesan):
     try:
         respon = requests.post(url, data=payload)
         if respon.status_code == 200:
-            print("✅ SUKSES: Laporan FULL telah dikirim ke Telegram!")
+            print("✅ SUKSES: Laporan telah dikirim ke Telegram!")
         else:
             print(f"❌ GAGAL: Pesan tidak terkirim. Error dari Telegram: {respon.text}")
     except Exception as e:
@@ -294,24 +294,42 @@ teks_makro = "\n".join([format_baris_telegram(row) for _, row in df_makro.iterro
 teks_tech = "\n".join([format_baris_telegram(row) for _, row in df_us_tech.iterrows()])
 teks_em = "\n".join([format_baris_telegram(row) for _, row in df_em_komoditas.iterrows()])
 
-pesan_final = f"""🤖 <b>LAPORAN PASAR SUBUH</b>
+# MENGIRIM PESAN SECARA BERTAHAP (4 PART) AGAR TIDAK DIBLOKIR TELEGRAM
+pesan_part1 = f"""🤖 <b>LAPORAN PASAR SUBUH (Part 1/4)</b>
 ======================
-
-🚨 <b>RADAR BOM WAKTU (KATALIS AS):</b>
+🚨 <b>RADAR BOM WAKTU:</b>
 {teks_bom_waktu}
 
 🇺🇸 <b>UPDATE DATA MAKRO AS:</b>
 {teks_makro_us}
 
-🇮🇩 <b>UPDATE DATA MAKRO INDONESIA:</b>
-{teks_makro_id}
-======================
+🇮🇩 <b>UPDATE DATA MAKRO ID:</b>
+{teks_makro_id}"""
 
-🌍 <b>KLASTER MAKRO & VALAS:</b>
-{teks_makro}
-💻 <b>US TECH & INFRASTRUKTUR AI:</b>
-{teks_tech}
-🇮🇩 <b>EMERGING MARKETS & KOMODITAS:</b>
+pesan_part2 = f"""🌍 <b>KLASTER MAKRO & VALAS (Part 2/4):</b>
+======================
+{teks_makro}"""
+
+pesan_part3 = f"""💻 <b>US TECH & INFRASTRUKTUR AI (Part 3/4):</b>
+======================
+{teks_tech}"""
+
+pesan_part4 = f"""🇮🇩 <b>EMERGING MARKETS & KOMODITAS (Part 4/4):</b>
+======================
 {teks_em}"""
 
-kirim_telegram_post(pesan_final)
+# Eksekusi pengiriman berurutan
+print("Mengirim Laporan Part 1...")
+kirim_telegram_post(pesan_part1)
+time.sleep(2) # Jeda 2 detik agar pesan masuk berurutan di Telegram
+
+print("Mengirim Laporan Part 2...")
+kirim_telegram_post(pesan_part2)
+time.sleep(2)
+
+print("Mengirim Laporan Part 3...")
+kirim_telegram_post(pesan_part3)
+time.sleep(2)
+
+print("Mengirim Laporan Part 4...")
+kirim_telegram_post(pesan_part4)
