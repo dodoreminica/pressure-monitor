@@ -3,9 +3,15 @@ name: Robot Scraper Subuh
 # KAPAN ROBOT INI HARUS BANGUN?
 on:
   schedule:
-    # Waktu di GitHub memakai jam London (UTC).
-    # Jam 5 Pagi WIB (Jakarta) = Jam 22:00 UTC (Malam sebelumnya).
-    - cron: '15 22 * * *'
+   # Target Tiba: ~08:00 Pagi WIB.
+    # Disetel bangun jam 06:27 Pagi WIB = Jam 23:27 UTC (hari sebelumnya)
+    # Trik menit ganjil (27) agar bebas antrean
+    - cron: '27 23 * * 0-4' 
+    
+    # Target Tiba: ~20:00 Malam WIB.
+    # Disetel bangun jam 18:33 Sore WIB = Jam 11:33 UTC 
+    # Trik menit ganjil (33) agar bebas antrean
+    - cron: '33 11 * * 1-5'
   workflow_dispatch: # Ini memunculkan tombol rahasia untuk tes manual
 
 # APA YANG HARUS DILAKUKAN ROBOT?
