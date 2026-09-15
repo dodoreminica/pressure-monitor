@@ -9,9 +9,9 @@ on:
     - cron: '27 23 * * 0-4' 
     
     # Target Tiba: ~20:00 Malam WIB.
-    # Disetel bangun jam 18:33 Sore WIB = Jam 11:33 UTC 
-    # Trik menit ganjil (33) agar bebas antrean
-    - cron: '33 11 * * 1-5'
+    # Disetel bangun jam 16:17 Sore WIB = Jam 09:17 UTC 
+    # Menghindari jam sibuk server UTC dan memberi jeda aman jika ada delay
+    - cron: '17 9 * * 1-5'
   workflow_dispatch: # Ini memunculkan tombol rahasia untuk tes manual
 
 # APA YANG HARUS DILAKUKAN ROBOT?
