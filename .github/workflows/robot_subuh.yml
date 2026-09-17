@@ -50,12 +50,19 @@ jobs:
       run: |
         git config --global user.name "Robot Scraper"
         git config --global user.email "robot@github.com"
-        git fetch origin main
-        git pull --rebase origin main
+        
+        # 1. Tandai file CSV yang berubah
         git add pressure_6mo_history.csv
+        
+        # 2. Cek apakah ada perubahan data
         if git diff --cached --quiet; then
           echo "Tidak ada perubahan data untuk di-commit."
           exit 0
         fi
+        
+        # 3. Commit perubahan lokal terlebih dahulu
         git commit -m "Update data harian otomatis jam 5 Pagi"
+        
+        # 4. Tarik update remote dan push
+        git pull --rebase origin main
         git push origin HEAD:main
