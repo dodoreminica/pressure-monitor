@@ -32,34 +32,71 @@ df_master = pd.read_csv(file_csv)
 df_pivot = df_master.copy()
 
 # ==============================================================================
-# TAHAP 2: LOGIKA MESIN ANALISIS & RADAR BOM WAKTU
+# TAHAP 2: LOGIKA MESIN ANALISIS & RADAR BOM WAKTU + FOREXFACTORY
 # ==============================================================================
 hari_ini_date = datetime.date.today()
 
-# --- SELIPKAN FUNGSI FOREXFACTORY DI SINI ---
+# --- 1. FUNGSI AMBIL KALENDER FOREXFACTORY ---
 def ambil_kalender_forexfactory():
     url = "https://s3.amazonaws.com/forexfactory/ff_calendar_thisweek.json"
     headers = {'User-Agent': 'Mozilla/5.0'}
     try:
-        res = requests.get(url, headers=headers)
+        res = requests.get(url, headers=headers, timeout=15)
         if res.status_code == 200:
             data = res.json()
             high_impact_usd = [
                 item for item in data 
-                if item.get('country') == 'USD' and item.get('impact') == 'High'
+                if item.get('country') == 'USD' and str(item.get('impact', '')).lower() == 'high'
             ]
             return high_impact_usd
     except Exception as e:
-        print(f"Gagal mengambil kalender ForexFactory: {e}")
+        print(f"⚠️ Gagal mengambil kalender ForexFactory: {e}")
     return []
 
-# --- KODE BAWAAN ANDA BERLANJUT ---
+# --- 2. LOGIKA KALENDER KATALIS MAKRO ---
 list_nfp = [datetime.date(2026, 8, 7), datetime.date(2026, 9, 4), datetime.date(2026, 10, 2), datetime.date(2026, 11, 6), datetime.date(2026, 12, 4)]
 list_cpi = [datetime.date(2026, 8, 12), datetime.date(2026, 9, 11), datetime.date(2026, 10, 13), datetime.date(2026, 11, 12), datetime.date(2026, 12, 10)]
 list_fomc = [datetime.date(2026, 9, 16), datetime.date(2026, 11, 4), datetime.date(2026, 12, 16)]
 
 def cari_tanggal_terdekat(daftar_tanggal):
-    ...
+    tanggal_mendatang = [tgl for tgl in daftar_tanggal if tgl >= hari_ini_date]
+    if tanggal_mendatang:
+        return min(tanggal_mendatang)
+    return None
+
+jadwal_bom_waktu = {
+    "NFP (Data Tenaga Kerja AS)": cari_tanggal_terdekat(list_nfp),
+    "CPI (Data Inflasi AS)": cari_tanggal_terdekat(list_cpi),
+    "FOMC (Penentuan Suku Bunga)": cari_tanggal_terdekat(list_fomc)
+}
+
+pesan_bom_list = []
+print("\n" + "★"*90)
+print("🚨 RADAR BOM WAKTU (KATALIS MAKRO AS) 🚨")
+print("★"*90)
+
+for event, tanggal in jadwal_bom_waktu.items():
+    if tanggal is None:
+        continue
+    
+    selisih_hari = (tanggal - hari_ini_date).days
+    tgl_str = tanggal.strftime('%d %B %Y')
+    
+    if 0 <= selisih_hari <= 7:
+        pesan = f"⚠️ <b>H-STAY AWAY:</b> {event} meledak dalam {selisih_hari} HARI (Tanggal {tgl_str})!"
+        pesan_bom_list.append(pesan)
+        print(pesan.replace("<b>", "").replace("</b>", ""))
+    else:
+        pesan = f"🟢 <b>AMAN:</b> {event} terdekat masih {selisih_hari} hari lagi (Tanggal {tgl_str})."
+        pesan_bom_list.append(pesan)
+        print(pesan.replace("<b>", "").replace("</b>", ""))
+
+if not pesan_bom_list:
+    pesan_bom_list.append("✅ <b>JALUR BERSIH:</b> Tidak ada bom waktu terdeteksi.")
+
+# DEKLARASI TEKS_BOM_WAKTU (Wajib ada agar pesan_part1 tidak crash)
+teks_bom_waktu = "\n".join(pesan_bom_list)
+print("="*90)
 
 # ==============================================================================
 # TAHAP 2.5: RUANG KONFIGURASI DATA MAKRO (AUTO-UPDATE FRED DAILY & MANUAL ID)
