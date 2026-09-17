@@ -36,97 +36,85 @@ df_pivot = df_master.copy()
 # ==============================================================================
 hari_ini_date = datetime.date.today()
 
+# --- SELIPKAN FUNGSI FOREXFACTORY DI SINI ---
+def ambil_kalender_forexfactory():
+    url = "https://s3.amazonaws.com/forexfactory/ff_calendar_thisweek.json"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    try:
+        res = requests.get(url, headers=headers)
+        if res.status_code == 200:
+            data = res.json()
+            high_impact_usd = [
+                item for item in data 
+                if item.get('country') == 'USD' and item.get('impact') == 'High'
+            ]
+            return high_impact_usd
+    except Exception as e:
+        print(f"Gagal mengambil kalender ForexFactory: {e}")
+    return []
+
+# --- KODE BAWAAN ANDA BERLANJUT ---
 list_nfp = [datetime.date(2026, 8, 7), datetime.date(2026, 9, 4), datetime.date(2026, 10, 2), datetime.date(2026, 11, 6), datetime.date(2026, 12, 4)]
 list_cpi = [datetime.date(2026, 8, 12), datetime.date(2026, 9, 11), datetime.date(2026, 10, 13), datetime.date(2026, 11, 12), datetime.date(2026, 12, 10)]
 list_fomc = [datetime.date(2026, 9, 16), datetime.date(2026, 11, 4), datetime.date(2026, 12, 16)]
 
 def cari_tanggal_terdekat(daftar_tanggal):
-    tanggal_mendatang = [tgl for tgl in daftar_tanggal if tgl >= hari_ini_date]
-    if tanggal_mendatang:
-        return min(tanggal_mendatang)
-    return None
-
-jadwal_bom_waktu = {
-    "NFP (Data Tenaga Kerja AS)": cari_tanggal_terdekat(list_nfp),
-    "CPI (Data Inflasi AS)": cari_tanggal_terdekat(list_cpi),
-    "FOMC (Penentuan Suku Bunga)": cari_tanggal_terdekat(list_fomc)
-}
-
-pesan_bom_list = []
-print("\n" + "★"*90)
-print("🚨 RADAR BOM WAKTU (KATALIS MAKRO AS) 🚨")
-print("★"*90)
-
-for event, tanggal in jadwal_bom_waktu.items():
-    if tanggal is None:
-        continue
-    
-    selisih_hari = (tanggal - hari_ini_date).days
-    tgl_str = tanggal.strftime('%d %B %Y')
-    
-    if 0 <= selisih_hari <= 7:
-        pesan = f"⚠️ <b>H-STAY AWAY:</b> {event} meledak dalam {selisih_hari} HARI (Tanggal {tgl_str})!"
-        pesan_bom_list.append(pesan)
-        print(pesan.replace("<b>", "").replace("</b>", ""))
-    else:
-        pesan = f"🟢 <b>AMAN:</b> {event} terdekat masih {selisih_hari} hari lagi (Tanggal {tgl_str})."
-        pesan_bom_list.append(pesan)
-        print(pesan.replace("<b>", "").replace("</b>", ""))
-
-if not pesan_bom_list:
-    pesan_bom_list.append("✅ <b>JALUR BERSIH:</b> Tidak ada bom waktu terdeteksi.")
-teks_bom_waktu = "\n".join(pesan_bom_list)
-print("="*90)
+    ...
 
 # ==============================================================================
-# TAHAP 2.5: RUANG KONFIGURASI DATA MAKRO (AUTO-UPDATE FRED API & MANUAL ID)
+# TAHAP 2.5: RUANG KONFIGURASI DATA MAKRO (AUTO-UPDATE FRED DAILY & MANUAL ID)
 # ==============================================================================
 print("\nMenarik data Makroekonomi AS terbaru dari server Federal Reserve (FRED)...")
 try:
     start_d = hari_ini_date - datetime.timedelta(days=730)
     
-    df_fed = web.DataReader('FEDFUNDS', 'fred', start_d, hari_ini_date)
-    fed_sekarang = df_fed.iloc[-1, 0]
-    tgl_fed_sekarang = df_fed.index[-1].strftime('%d %b %Y')
-    fed_sebelumnya = df_fed.iloc[-2, 0]
-    tgl_fed_sebelumnya = df_fed.index[-2].strftime('%d %b %Y')
+    # 1. Suku Bunga Target The Fed (Harian: Upper & Lower Range)
+    df_fed_u = web.DataReader('DFEDTARU', 'fred', start_d, hari_ini_date)
+    df_fed_l = web.DataReader('DFEDTARL', 'fred', start_d, hari_ini_date)
+    
+    fed_upper = df_fed_u.iloc[-1, 0]
+    fed_lower = df_fed_l.iloc[-1, 0]
+    tgl_fed = df_fed_u.index[-1].strftime('%d %b %Y')
+    
+    fed_rate_str = f"{fed_lower:.2f}% - {fed_upper:.2f}% (Rilis: {tgl_fed} | Target: 2.00%)"
 
+    # 2. Pengangguran AS (Unemployment Rate)
     df_unemp = web.DataReader('UNRATE', 'fred', start_d, hari_ini_date)
     unemp_sekarang = df_unemp.iloc[-1, 0]
     tgl_unemp_sekarang = df_unemp.index[-1].strftime('%d %b %Y')
     unemp_sebelumnya = df_unemp.iloc[-2, 0]
     tgl_unemp_sebelumnya = df_unemp.index[-2].strftime('%d %b %Y')
 
+    # 3. Inflasi AS (CPI YoY)
     cpi_data = web.DataReader('CPIAUCSL', 'fred', start_d, hari_ini_date)
     cpi_sekarang = cpi_data.iloc[-1, 0]
     tgl_cpi_sekarang = cpi_data.index[-1].strftime('%d %b %Y')
-    
     cpi_bln_lalu = cpi_data.iloc[-2, 0]
     tgl_cpi_sebelumnya = cpi_data.index[-2].strftime('%d %b %Y')
     
     cpi_thn_lalu = cpi_data.iloc[-13, 0]
-    
     cpi_yoy_sekarang = ((cpi_sekarang - cpi_thn_lalu) / cpi_thn_lalu) * 100
     cpi_yoy_sebelumnya = ((cpi_bln_lalu - cpi_data.iloc[-14, 0]) / cpi_data.iloc[-14, 0]) * 100
 
     makro_us = {
-        "Suku Bunga The Fed": f"{fed_sekarang:.2f}% (Rilis: {tgl_fed_sekarang} | Sebelumnya: {fed_sebelumnya:.2f}% per {tgl_fed_sebelumnya} | Target: 2.00%)",
-        "Inflasi Tahunan (CPI YoY)": f"{cpi_yoy_sekarang:.2f}% (Rilis: {tgl_cpi_sekarang} | Sebelumnya: {cpi_yoy_sebelumnya:.2f}% per {tgl_cpi_sebelumnya} | Target The Fed: 2.00%)",
+        "Suku Bunga The Fed (Target Range)": fed_rate_str,
+        "Inflasi Tahunan (CPI YoY)": f"{cpi_yoy_sekarang:.2f}% (Rilis: {tgl_cpi_sekarang} | Sebelumnya: {cpi_yoy_sebelumnya:.2f}% per {tgl_cpi_sebelumnya} | Target: 2.00%)",
         "Pengangguran AS (Unemployment)": f"{unemp_sekarang:.2f}% (Rilis: {tgl_unemp_sekarang} | Sebelumnya: {unemp_sebelumnya:.2f}% per {tgl_unemp_sebelumnya})"
     }
 
-    print("✅ SUKSES Tarik Data FRED secara Transparan:")
+    print("✅ SUKSES Tarik Data FRED Target Rate secara Real-Time:")
     for k, v in makro_us.items():
         print(f"   📌 {k} : {v}")
 
 except Exception as e:
     print(f"⚠️ GAGAL menarik data FRED: {e}. Menggunakan data cadangan.")
     makro_us = {
-        "Suku Bunga The Fed (FOMC Rate)": "5.25% - 5.50% (Fallback)",
+        "Suku Bunga The Fed (FOMC Rate)": "3.75% - 4.00% (Fallback)",
         "Inflasi Tahunan AS (CPI YoY)": "3.0% (Fallback | Target: 2.0%)",
         "Pengangguran AS (Unemployment)": "4.1% (Fallback)"
     }
 
+# --- UPDATE DATA MAKRO INDONESIA ---
 catatan_manual_id = "Catatan: Data Indonesia diupdate secara manual (cek berkala ke website resmi BI/BPS)."
 makro_id = {
     "Suku Bunga Acuan (BI Rate)": "5.75% (Rilis RDG Agustus 2026 | Sebelumnya: 6.25% | Target Inflasi BI: 1.5% - 3.5%)",
@@ -139,9 +127,9 @@ print(f"   ⚠️ {catatan_manual_id}")
 for k, v in makro_id.items():
     print(f"   📌 {k} : {v}")
 
+# FORMAT TEKS UNTUK TELEGRAM
 teks_makro_us = "\n".join([f"📌 <b>{k}</b> :\n   └ {v}" for k, v in makro_us.items()])
 teks_makro_id = f"⚠️ <i>{catatan_manual_id}</i>\n" + "\n".join([f"📌 <b>{k}</b> :\n   └ {v}" for k, v in makro_id.items()])
-
 
 # ==============================================================================
 # TAHAP 3: MESIN DASHBOARD SPLIT-SCREEN & TREND BACAAN
