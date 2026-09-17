@@ -8,11 +8,10 @@ on:
     # Trik menit ganjil (27) agar bebas antrean
     - cron: '27 23 * * 0-4' 
     
-    # Target Tiba: ~20:00 Malam WIB.
-    # Disetel bangun jam 16:17 Sore WIB = Jam 09:17 UTC 
-    # Menghindari jam sibuk server UTC dan memberi jeda aman jika ada delay
-    - cron: '17 9 * * 1-5'
-  workflow_dispatch: # Ini memunculkan tombol rahasia untuk tes manual
+# Target Tiba: Sebelum 18:00 WIB (Persiapan Pasar US)
+    # Disetel bangun jam 15:17 Sore WIB = Jam 08:17 UTC 
+    # Dimajukan 1 jam lebih awal untuk menghindari antrean server GitHub
+    - cron: '17 8 * * 1-5'
 
 # APA YANG HARUS DILAKUKAN ROBOT?
 jobs:
