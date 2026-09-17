@@ -3,15 +3,18 @@ name: Robot Scraper Subuh
 # KAPAN ROBOT INI HARUS BANGUN?
 on:
   schedule:
-   # Target Tiba: ~08:00 Pagi WIB.
+    # Target Tiba: ~08:00 Pagi WIB.
     # Disetel bangun jam 06:27 Pagi WIB = Jam 23:27 UTC (hari sebelumnya)
     # Trik menit ganjil (27) agar bebas antrean
     - cron: '27 23 * * 0-4' 
     
-# Target Tiba: Sebelum 18:00 WIB (Persiapan Pasar US)
+    # Target Tiba: Sebelum 18:00 WIB (Persiapan Pasar US)
     # Disetel bangun jam 15:17 Sore WIB = Jam 08:17 UTC 
     # Dimajukan 1 jam lebih awal untuk menghindari antrean server GitHub
     - cron: '17 8 * * 1-5'
+
+  # Fitur tambahan untuk mempermudah tes jalankan manual dari tab Actions
+  workflow_dispatch:
 
 # APA YANG HARUS DILAKUKAN ROBOT?
 jobs:
@@ -25,6 +28,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
 
     - name: 2. Siapkan Mesin Python
       uses: actions/setup-python@v5
@@ -46,6 +50,12 @@ jobs:
       run: |
         git config --global user.name "Robot Scraper"
         git config --global user.email "robot@github.com"
+        git fetch origin main
+        git pull --rebase origin main
         git add pressure_6mo_history.csv
-        git commit -m "Update data harian otomatis jam 5 Pagi" || exit 0
-        git push
+        if git diff --cached --quiet; then
+          echo "Tidak ada perubahan data untuk di-commit."
+          exit 0
+        fi
+        git commit -m "Update data harian otomatis jam 5 Pagi"
+        git push origin HEAD:main
