@@ -230,7 +230,7 @@ def scrape_full_data(ticker, div_time_manual):
 # 3. EKSEKUSI PIPELINE
 # =========================================================
 daftar_saham = {
-    # -----------------------------------------------------
+# -----------------------------------------------------
     # 1. SEKTOR ENERGI (Minyak, Gas, Batu Bara & Jasa Pendukung)
     # -----------------------------------------------------
     "AADI": "JUN & NOV", "ADRO": "MAY & DEC", "AKRA": "MAY & AUG", "BSSR": "JAN & JUN & NOV",
@@ -285,9 +285,10 @@ daftar_saham = {
     # -----------------------------------------------------
     # 7. SEKTOR KEUANGAN (Bank, Multifinance, Asuransi, Sekuritas)
     # -----------------------------------------------------
-    "ADMF": "MAY", "AMAG": "MAY", "ASDM": "JUL", "BBCA": "MAR & DEC", "BBNI": "MAR",
-    "BBRI": "MAR", "BBTN": "MAR", "BDMN": "APR", "BFIN": "MAY & NOV", "BMRI": "MAR",
-    "BRIS": "MAY", "DNAR": "-", "NISP": "APR", "PANS": "JUL", "BBYB": "-", "SRTG": "MAY",
+    "ADMF": "MAY", "AMAG": "MAY", "ASDM": "JUL", "BBCA": "MAR & DEC", "BBKP": "-", 
+    "BBNI": "MAR", "BBRI": "MAR", "BBTN": "MAR", "BDMN": "APR", "BFIN": "MAY & NOV", 
+    "BMRI": "MAR", "BRIS": "MAY", "DNAR": "-", "NISP": "APR", "PANS": "JUL", 
+    "BBYB": "-", "SRTG": "MAY",
 
     # -----------------------------------------------------
     # 8. PROPERTI & REAL ESTAT (Pengembang Properti & Kawasan)
@@ -303,7 +304,8 @@ daftar_saham = {
     # -----------------------------------------------------
     # 10. INFRASTRUKTUR (Telekomunikasi, Tol, Menara, Konstruksi)
     # -----------------------------------------------------
-    "CBDK": "MAY",  "JKON": "JUN", "JSMR": "MAY", "PGAS": "JUN", "PGEO": "JUN", "POWR": "MAY & DEC", "NRCA": "MAY", "CDIA": "MAY",
+    "CBDK": "MAY", "CDIA": "MAY", "JKON": "JUN", "JSMR": "MAY", "PGAS": "JUN", 
+    "PGEO": "JUN", "POWR": "MAY & DEC", "NRCA": "MAY",
 
     # -----------------------------------------------------
     # 11. TRANSPORTASI & LOGISTIK (Pengiriman & Maritim)
@@ -312,8 +314,8 @@ daftar_saham = {
     "MAHA": "MAY", "NELY": "JUN & DEC", "SMDR": "JUL", "TEBE": "-", "TMAS": "MAY", "TPMA": "MAY",
     "BBRM": "-", "BOAT": "-", "BULL": "-",
 
-  # -----------------------------------------------------
-    # 11. INFRASTRUKTUR TELEKOMUNIKASI & DATA CENTER (AI & Jaringan)
+    # -----------------------------------------------------
+    # 12. INFRASTRUKTUR TELEKOMUNIKASI & DATA CENTER (AI & Jaringan)
     # -----------------------------------------------------
     # Pilar Data Center & Cloud
     "DCII": "-", "DSSA": "-", "EDGE": "-", "INET": "-", "MGLV": "-",
