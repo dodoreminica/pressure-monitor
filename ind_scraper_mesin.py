@@ -5,6 +5,8 @@ import time
 import random
 import io
 import re
+import json
+import os
 from bs4 import BeautifulSoup
 
 print("📥 TAHAP 1: EKSTRAKSI DATA MULTI-DIMENSI (CSA, TECHNICAL & DIVIDEND)")
@@ -43,7 +45,74 @@ def format_money(val):
     return f"{val:+.0f}"
 
 # =========================================================
-# 2. MESIN PENYEDOT MULTI-HALAMAN & API
+# 2. MESIN PENYEDOT DATA MAKRO (SUN 10Y & MRP) DENGAN CACHE
+# =========================================================
+def dapatkan_data_makro():
+    print("🌍 Mengambil Data Makro (SUN 10Y & MRP)...")
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    cache_file = "macro_cache.json"
+    
+    # Nilai Darurat (Hanya dipakai jika file cache belum pernah dibuat & web down)
+    sun_10y, mrp = 0.0715, 0.10
+    
+    # Coba muat data dari hari sebelumnya (Cache)
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, "r") as f:
+                cache_data = json.load(f)
+                sun_10y = cache_data.get("sun_10y", sun_10y)
+                mrp = cache_data.get("mrp", mrp)
+                print("   📥 Memuat data hari sebelumnya sebagai backup.")
+        except Exception:
+            pass
+
+    # Scrape SUN 10Y (Timpa variabel jika berhasil)
+    try:
+        url_yf = "https://query1.finance.yahoo.com/v8/finance/chart/ID10YT=RR?range=5d&interval=1d"
+        res_yf = requests.get(url_yf, headers=headers).json()
+        if res_yf.get('chart', {}).get('result'):
+            closes = [c for c in res_yf['chart']['result'][0]['indicators']['quote'][0].get('close', []) if c is not None]
+            if closes: sun_10y = closes[-1] / 100.0
+    except Exception:
+        print("   ⚠️ Gagal scrape SUN 10Y baru, menggunakan data backup.")
+
+    # Scrape MRP (Timpa variabel jika berhasil)
+    try:
+        url_dam = "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/ctryprem.html"
+        res_dam = requests.get(url_dam, headers=headers)
+        dfs = pd.read_html(io.StringIO(res_dam.text))
+        for df in dfs:
+            if 'Indonesia' in df.to_string():
+                indo_row = df[df.iloc[:, 0].astype(str).str.contains('Indonesia', na=False)]
+                if not indo_row.empty:
+                    persentase_ditemukan = []
+                    for val in indo_row.values[0][1:]:
+                        val_str = str(val).strip()
+                        if '%' in val_str:
+                            try:
+                                persentase_ditemukan.append(float(val_str.replace('%', '').replace(',', '.')) / 100.0)
+                            except ValueError:
+                                pass
+                    if persentase_ditemukan: mrp = max(persentase_ditemukan)
+                    break
+    except Exception:
+        print("   ⚠️ Gagal scrape MRP baru, menggunakan data backup.")
+
+    # Simpan nilai terbaru ke Cache JSON untuk dipakai besok
+    try:
+        with open(cache_file, "w") as f:
+            json.dump({"sun_10y": sun_10y, "mrp": mrp}, f)
+    except Exception:
+        pass
+
+    print(f"✅ Data Makro Final -> SUN 10Y: {sun_10y*100:.2f}% | MRP: {mrp*100:.2f}%\n")
+    return round(sun_10y, 4), round(mrp, 4)
+
+# Eksekusi fungsi Makro SATU KALI SAJA sebelum looping saham
+GLOBAL_SUN_10Y, GLOBAL_MRP = dapatkan_data_makro()
+
+# =========================================================
+# 3. MESIN PENYEDOT MULTI-HALAMAN & API PER SAHAM
 # =========================================================
 def scrape_full_data(ticker, div_time_manual):
     print(f"🔄 Menyedot Web & API untuk: {ticker}...")
@@ -73,13 +142,33 @@ def scrape_full_data(ticker, div_time_manual):
                             if key and key != 'nan': kamus[key] = val
             except ValueError:
                 pass
-
     except Exception as e:
         print(f"   ⚠️ Gagal menyedot fundamental {ticker}")
 
-    # =================================================================
-    # MESIN PEMBEDAH DIVIDEN (HANYA PAYOUT FREQUENCY)
-    # =================================================================
+    # MESIN EKSTRAKSI EPS 5 TAHUN
+    eps_cagr_5y = np.nan 
+    try:
+        url_is = f"https://stockanalysis.com/quote/idx/{ticker}/financials/"
+        res_is = requests.get(url_is, headers=headers)
+        tb_is = pd.read_html(io.StringIO(res_is.text))[0]
+        
+        eps_row = tb_is[tb_is.iloc[:, 0].str.contains("Earnings Per Share|EPS", case=False, na=False)]
+        if not eps_row.empty:
+            eps_values = eps_row.iloc[0, 1:].replace({'-': np.nan, ',': ''}, regex=True).astype(float).dropna().values
+            if len(eps_values) >= 6:
+                eps_current = float(eps_values[0])  
+                eps_past = float(eps_values[5])     
+                
+                if eps_past > 0 and eps_current > 0:
+                    eps_cagr_5y = round((((eps_current / eps_past) ** (1/5)) - 1) * 100, 2)
+                elif eps_past < 0 and eps_current > 0:
+                    eps_cagr_5y = "Turnaround"
+                else:
+                    eps_cagr_5y = "Negatif/Deklinasi"
+    except Exception as e:
+        pass 
+
+    # MESIN PEMBEDAH DIVIDEN
     payout_frequency = np.nan
     try:
         res_div = requests.get(f"https://stockanalysis.com/quote/idx/{ticker}/dividend/", headers=headers)
@@ -90,24 +179,22 @@ def scrape_full_data(ticker, div_time_manual):
             for i in range(len(teks_div)):
                 if teks_div[i].strip() == 'Payout Frequency' and i + 1 < len(teks_div):
                     pf_val = teks_div[i+1].strip()
-                    # Filter validasi: Pastikan teks yang diambil memang frekuensi
                     if pf_val.lower() in ['annual', 'semi-annual', 'semi annual', 'quarterly', 'monthly']:
                         payout_frequency = pf_val
                         break
     except Exception as e:
         pass
 
-    # =================================================================
     # MESIN TECHNICAL & FLOW
-    # =================================================================
     flow_1d, flow_2d, flow_3d, flow_4d, flow_1w, flow_1m, flow_3m, flow_6m = ["N/A"] * 8
     flow_1m_raw = 0
     rsi_14, macd_line, macd_signal = np.nan, np.nan, np.nan
     close_price = parse_angka(kamus_ov.get('Previous Close'))
     trend_ma, sinyal_tech = 'N/A', 'N/A'
+    ma_200_status = 'N/A'
 
     try:
-        url_yf = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}.JK?range=1y&interval=1d"
+        url_yf = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}.JK?range=5y&interval=1d"
         res_yf = requests.get(url_yf, headers=headers).json()
 
         if res_yf.get('chart', {}).get('result') is not None:
@@ -117,8 +204,9 @@ def scrape_full_data(ticker, div_time_manual):
 
             df_tech = pd.DataFrame({'close': closes, 'volume': volumes}).dropna()
 
-            if len(df_tech) > 120:
+            if len(df_tech) > 200:
                 close_price = df_tech['close'].iloc[-1]
+
                 delta = df_tech['close'].diff()
                 gain = (delta.where(delta > 0, 0)).ewm(alpha=1/14, adjust=False).mean()
                 loss = (-delta.where(delta < 0, 0)).ewm(alpha=1/14, adjust=False).mean()
@@ -134,9 +222,13 @@ def scrape_full_data(ticker, div_time_manual):
 
                 df_tech['MA20'] = df_tech['close'].rolling(20).mean()
                 df_tech['MA60'] = df_tech['close'].rolling(60).mean()
+                df_tech['MA200'] = df_tech['close'].rolling(200).mean() 
+
                 h0, h1 = df_tech.iloc[-1], df_tech.iloc[-2]
 
                 trend_ma = "UPTREND" if h0['MA20'] > h0['MA60'] else "DOWNTREND"
+                ma_200_status = "ABOVE MA200" if h0['close'] > h0['MA200'] else "BELOW MA200"
+
                 if h1['MA20'] <= h1['MA60'] and h0['MA20'] > h0['MA60']: sinyal_tech = "GOLDEN CROSS 🚀"
                 elif h1['MA20'] >= h1['MA60'] and h0['MA20'] < h0['MA60']: sinyal_tech = "DEATH CROSS 🩸"
                 else: sinyal_tech = "TERKONFIRMASI"
@@ -178,7 +270,9 @@ def scrape_full_data(ticker, div_time_manual):
         'Interest Expense': parse_angka(kamus_is.get('Interest Expense', kamus_is.get('Interest Expense / Income')), True),
         'Operating Cash Flow': parse_angka(kamus_cf.get('Operating Cash Flow'), True),
         'Investing Cash Flow': parse_angka(kamus_cf.get('Investing Cash Flow', kamus_cf.get('Cash Flow from Investing')), True),
-        'Financing Cash Flow': parse_angka(kamus_cf.get('Financing Cash Flow', kamus_cf.get('Cash Flow from Financing')), True)
+        'Financing Cash Flow': parse_angka(kamus_cf.get('Financing Cash Flow', kamus_cf.get('Cash Flow from Financing')), True),
+        'Interest Coverage Ratio': parse_angka(kamus_stat.get('Interest Coverage')),
+        'Free Cash Flow': parse_angka(kamus_stat.get('Free Cash Flow'))
     }
 
     # --- DATASET B ---
@@ -196,14 +290,14 @@ def scrape_full_data(ticker, div_time_manual):
         'Capital Expenditure': parse_angka(kamus_stat.get('Capital Expenditures')),
         'Working Capital': parse_angka(kamus_stat.get('Working Capital')),
         'Depreciation & Amortization': parse_angka(kamus_stat.get('Depreciation & Amortization')),
-        'SUN 10 Year': 0.0715, 'Beta': parse_angka(kamus_stat.get('Beta (5Y)', kamus_stat.get('Beta'))),
-        'Market Risk Premium': 0.10, 'Dividend Per Share': parse_angka(kamus_stat.get('Dividend Per Share')),
+        'SUN 10 Year': GLOBAL_SUN_10Y, 
+        'Beta': parse_angka(kamus_stat.get('Beta (5Y)', kamus_stat.get('Beta'))),
+        'Market Risk Premium': GLOBAL_MRP, 
+        'Dividend Per Share': parse_angka(kamus_stat.get('Dividend Per Share')),
         'Dividend Yield': parse_angka(kamus_stat.get('Dividend Yield')), 'Dividend Time': div_time_manual,
-
-        # INI KOLOM PAYOUT FREQUENCY SAJA (Annual Dividend sudah dihapus)
         'Payout Frequency': payout_frequency,
-
-        'Expected Dividend Growth': expected_div_growth
+        'Expected Dividend Growth': expected_div_growth,
+        'EPS CAGR 5Y (%)': eps_cagr_5y
     }
 
     # --- DATASET C ---
@@ -217,7 +311,7 @@ def scrape_full_data(ticker, div_time_manual):
 
     # --- DATASET D ---
     data_D = {
-        'Ticker': ticker, 'Trend (MA)': trend_ma, 'Sinyal Teknikal': sinyal_tech,
+        'Ticker': ticker, 'Trend (MA)': trend_ma, 'MA200 Status': ma_200_status, 'Sinyal Teknikal': sinyal_tech,
         'RSI (14)': rsi_14, 'MACD Line': macd_line, 'MACD Signal': macd_signal,
         'Flow 1D': flow_1d, 'Flow 2D': flow_2d, 'Flow 3D': flow_3d, 'Flow 4D': flow_4d,
         'Flow 1W': flow_1w, 'Flow 1M': flow_1m, 'Flow 3M': flow_3m, 'Flow 6M': flow_6m,
@@ -227,39 +321,31 @@ def scrape_full_data(ticker, div_time_manual):
     return data_A, data_B, data_C, data_D
 
 # =========================================================
-# 3. EKSEKUSI PIPELINE
+# 4. EKSEKUSI PIPELINE (LOOPING SAHAM)
 # =========================================================
 daftar_saham = {
-# -----------------------------------------------------
-    # 1. SEKTOR ENERGI (Minyak, Gas, Batu Bara & Jasa Pendukung)
-    # -----------------------------------------------------
+    # SEKTOR ENERGI
     "AADI": "JUN & NOV", "ADRO": "MAY & DEC", "AKRA": "MAY & AUG", "BSSR": "JAN & JUN & NOV",
     "BUMI": "-", "BYAN": "JUN / DEC", "ELSA": "JUN", "ENRG": "-", "GEMS": "JUN",
     "INDY": "JUN / MAY", "ITMG": "APR & NOV", "KKGI": "JUN & DEC", "MCOL": "MAY & NOV",
     "MEDC": "JUN & NOV", "MYOH": "JUN", "PTBA": "JUN", "SICO": "APR & NOV /DEC", "TOBA": "MAY",
-
-    # -----------------------------------------------------
-    # 2. SEKTOR BARANG BAKU (Logam, Kimia, Kayu, Kertas, Plastik, Semen)
-    # -----------------------------------------------------
+    
+    # SEKTOR BARANG BAKU
     "AMMN": "-", "ANTM": "JUN", "AVIA": "APR & NOV", "BRMS": "-", "BRPT": "JUN",
     "CITA": "JUL", "CLPI": "JUN / JUL", "DKFT": "JUN & OCT", "ESSA": "APR", "FWCT": "JUN & NOV",
     "GDST": "JUN & DEC LAST 2024", "GGRP": "JUN", "INCO": "MAY", "INKP": "JUN", "INTP": "MAY",
     "ISSP": "JUL", "MBMA": "-", "MDKA": "-", "MINE": "-", "NCKL": "JUN",
     "NICL": "MAY / JUN & AUG & NOV /DEC", "PBID": "MAY / JUN", "PSAB": "JUN/JUL",
-    "SAMF": "JUN", "SMGR": "MAY", "SRSN": "JUN / JUL", "TINS": "JUN", "TKIM": "JUN", "TPIA": "JUN", 
+    "SAMF": "JUN", "SMGR": "MAY", "SRSN": "JUN / JUL", "TINS": "JUN", "TKIM": "JUN", "TPIA": "JUN",
     "BLES": "JUN / JUL", "DGWG": "-", "FPNI": "-", "PART": "-", "SMGA": "-",
 
-    # -----------------------------------------------------
-    # 3. SEKTOR PERINDUSTRIAN (Alat Berat, Mesin, Jasa Industri)
-    # -----------------------------------------------------
+    # PERINDUSTRIAN
     "ABMM": "MAY", "ASII": "MAY & OCT", "HEXA": "SEP / OCT", "JTPE": "JUN & NOV",
     "KBLI": "MAY & AUG", "KUAS": "JUN / MAY", "MSJA": "JUN", "PBSA": "JUN",
     "SCCO": "JUN", "SKRN": "MAY / JUN & NOV", "TOTL": "MAY", "UNTR": "MAY & OCT",
     "CARS": "-", "GJTL": "JUN / JUL", "MPPA": "-",
 
-    # -----------------------------------------------------
-    # 4. KONSUMEN PRIMER (FMCG, Rokok, Sawit, Makanan)
-    # -----------------------------------------------------
+    # KONSUMEN PRIMER
     "AALI": "MAY & OCT", "AMRT": "MAY", "BUDI": "JUN & NOV", "CLEO": "JUN", "CMRY": "JUN",
     "CPIN": "MAY", "DSNG": "JUN", "GGRM": "JUL", "HMSP": "MAY", "ICBP": "JUL", "INDF": "JUL",
     "JPFA": "APR", "LSIP": "JUL", "MIDI": "MAY", "MLBI": "MAY / JUN & NOV", "MYOR": "MAY",
@@ -267,63 +353,43 @@ daftar_saham = {
     "TBLA": "JUN", "TLDN": "MAY & OCT", "WIIM": "JUN", "YUPI": "JUL & DEC",
     "BWPT": "-", "GZCO": "-", "SIMP": "JUL", "STAA": "MAY & OCT",
 
-    # -----------------------------------------------------
-    # 5. KONSUMEN NON-PRIMER (Ritel, Otomotif, Perabot, Media, Hotel)
-    # -----------------------------------------------------
+    # KONSUMEN NON-PRIMER
     "ACES": "JUN", "AUTO": "MAY & OCT", "EAST": "APR / JUN & DEC / JAN", "ERAA": "JUN",
     "KDSI": "JUN", "LPIN": "MAY / JUN", "MAPI": "JUN", "MNCN": "JUL", "MPMX": "JUN",
     "PANR": "MAY", "RALS": "MAY", "SCMA": "JUN & NOV", "SMSM": "MAY & AUG",
     "SPTO": "JUN & NOV", "TOTO": "JUN & NOV",
 
-    # -----------------------------------------------------
-    # 6. SEKTOR KESEHATAN (Rumah Sakit, Farmasi, Alkes)
-    # -----------------------------------------------------
+    # KESEHATAN
     "DVLA": "JUN & OCT / NOV", "EPMT": "MAY / JUN", "HEAL": "JUN", "KLBF": "JUN",
     "MARK": "MAY & AUG", "MIKA": "MAY", "PRDA": "MAY / APR", "SIDO": "MAY & NOV",
     "SILO": "MAY", "TSPC": "JUN & NOV",
 
-    # -----------------------------------------------------
-    # 7. SEKTOR KEUANGAN (Bank, Multifinance, Asuransi, Sekuritas)
-    # -----------------------------------------------------
-    "ADMF": "MAY", "AMAG": "MAY", "ASDM": "JUL", "BBCA": "MAR & DEC", "BBKP": "-", 
-    "BBNI": "MAR", "BBRI": "MAR", "BBTN": "MAR", "BDMN": "APR", "BFIN": "MAY & NOV", 
-    "BMRI": "MAR", "BRIS": "MAY", "DNAR": "-", "NISP": "APR", "PANS": "JUL", 
+    # KEUANGAN
+    "ADMF": "MAY", "AMAG": "MAY", "ASDM": "JUL", "BBCA": "MAR & DEC", "BBKP": "-",
+    "BBNI": "MAR", "BBRI": "MAR", "BBTN": "MAR", "BDMN": "APR", "BFIN": "MAY & NOV",
+    "BMRI": "MAR", "BRIS": "MAY", "DNAR": "-", "NISP": "APR", "PANS": "JUL",
     "BBYB": "-", "SRTG": "MAY",
 
-    # -----------------------------------------------------
-    # 8. PROPERTI & REAL ESTAT (Pengembang Properti & Kawasan)
-    # -----------------------------------------------------
+    # PROPERTI
     "BKSL": "-", "BSDE": "-", "CTRA": "JUN", "DMAS": "MAY / JUN", "DUTI": "GA NENTU",
     "PWON": "JUL", "RDTX": "JUN / JUL & DEC", "SMRA": "JUN", "SSIA": "JUN",
 
-    # -----------------------------------------------------
-    # 9. SEKTOR TEKNOLOGI (E-Commerce, IT, Perangkat Keras)
-    # -----------------------------------------------------
+    # TEKNOLOGI
     "BUKA": "-", "EMTK": "NOV", "GOTO": "-", "MSTI": "JUN", "MTDL": "MAY", "PTSN": "JUN", "WIRG": "-",
 
-    # -----------------------------------------------------
-    # 10. INFRASTRUKTUR (Telekomunikasi, Tol, Menara, Konstruksi)
-    # -----------------------------------------------------
-    "CBDK": "MAY", "CDIA": "MAY", "JKON": "JUN", "JSMR": "MAY", "PGAS": "JUN", 
+    # INFRASTRUKTUR
+    "CBDK": "MAY", "CDIA": "MAY", "JKON": "JUN", "JSMR": "MAY", "PGAS": "JUN",
     "PGEO": "JUN", "POWR": "MAY & DEC", "NRCA": "MAY",
 
-    # -----------------------------------------------------
-    # 11. TRANSPORTASI & LOGISTIK (Pengiriman & Maritim)
-    # -----------------------------------------------------
+    # TRANSPORTASI
     "ASSA": "JUN", "HAIS": "APR", "IPCC": "JUN & DEC", "IPCM": "JUN & DEC",
     "MAHA": "MAY", "NELY": "JUN & DEC", "SMDR": "JUL", "TEBE": "-", "TMAS": "MAY", "TPMA": "MAY",
     "BBRM": "-", "BOAT": "-", "BULL": "-",
 
-    # -----------------------------------------------------
-    # 12. INFRASTRUKTUR TELEKOMUNIKASI & DATA CENTER (AI & Jaringan)
-    # -----------------------------------------------------
-    # Pilar Data Center & Cloud
+    # INFRASTRUKTUR DATA & TELKO
     "DCII": "-", "DSSA": "-", "EDGE": "-", "INET": "-", "MGLV": "-",
-    # Operator Telekomunikasi Utama
-    "EXCL": "MAY", "FREN": "-", "ISAT": "MAY", "TLKM": "JUN", 
-    # Raja Menara & Jaringan Fiber Optik
+    "EXCL": "MAY", "FREN": "-", "ISAT": "MAY", "TLKM": "JUN",
     "LINK": "-", "MORA": "-", "MTEL": "MAY", "TBIG": "MAY & DEC", "TOWR": "MAY & DEC",
-    # Pendukung Hardware & Solusi IT
     "GLVA": "MAY", "MLPT": "JUN", "KETR": "-",
 }
 
@@ -341,9 +407,8 @@ df_D = pd.DataFrame(list_D)
 df_C_clean = df_C[['Ticker', 'Altman Z-Score', 'Total Assets', 'Retained Earnings', 'Market Cap']]
 df_mentah_utama = df_B.merge(df_C_clean, on='Ticker', how='left').merge(df_A, on='Ticker', how='left').merge(df_D, on='Ticker', how='left')
 
-
 # =========================================================
-# 4. EXPORT DATA (WAJIB UNTUK GITHUB ACTIONS)
+# 5. EXPORT DATA (WAJIB UNTUK GITHUB ACTIONS)
 # =========================================================
 print("💾 Menyimpan seluruh data ke CSV...")
 
