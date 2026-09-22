@@ -285,6 +285,7 @@ def scrape_full_data(ticker, div_time_manual):
         'Ticker': ticker, 'Sector': sector, 'Industry': industry, 'Close': close_price,
         'PE Ratio': parse_angka(kamus_rat.get('PE Ratio', kamus_stat.get('PE Ratio'))),
         'PB Ratio': parse_angka(kamus_rat.get('PB Ratio', kamus_rat.get('P/B Ratio'))),
+        'Debt / Equity Ratio': parse_angka(kamus_rat.get('Debt / Equity Ratio', kamus_rat.get('Debt / Equity', kamus_stat.get('Debt/Equity')))),
         'ROE': roe,
         'EV/EBITDA': parse_angka(kamus_rat.get('EV/EBITDA', kamus_rat.get('EV/EBITDA Ratio'))),
         'Capital Expenditure': parse_angka(kamus_stat.get('Capital Expenditures')),
