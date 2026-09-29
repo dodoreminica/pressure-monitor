@@ -369,7 +369,7 @@ daftar_saham = {
     "ADMF": "MAY", "AMAG": "MAY", "ASDM": "JUL", "BBCA": "MAR & DEC", "BBKP": "-",
     "BBNI": "MAR", "BBRI": "MAR", "BBTN": "MAR", "BDMN": "APR", "BFIN": "MAY & NOV",
     "BMRI": "MAR", "BRIS": "MAY", "DNAR": "-", "NISP": "APR", "PANS": "JUL",
-    "BBYB": "-", "SRTG": "MAY",
+    "BBYB": "-", "SRTG": "MAY", "BNGA": "APR",
 
     # PROPERTI
     "BKSL": "-", "BSDE": "-", "CTRA": "JUN", "DMAS": "MAY / JUN", "DUTI": "GA NENTU",
