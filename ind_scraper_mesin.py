@@ -338,7 +338,7 @@ daftar_saham = {
     "ISSP": "JUL", "MBMA": "-", "MDKA": "-", "MINE": "-", "NCKL": "JUN",
     "NICL": "MAY / JUN & AUG & NOV /DEC", "PBID": "MAY / JUN", "PSAB": "JUN/JUL",
     "SAMF": "JUN", "SMGR": "MAY", "SRSN": "JUN / JUL", "TINS": "JUN", "TKIM": "JUN", "TPIA": "JUN",
-    "BLES": "JUN / JUL", "DGWG": "-", "FPNI": "-", "PART": "-", "SMGA": "-",
+    "BLES": "JUN / JUL", "DGWG": "-", "FPNI": "-", "PART": "-", "SMGA": "-", "HRTA": "JUN",
 
     # PERINDUSTRIAN
     "ABMM": "MAY", "ASII": "MAY & OCT", "HEXA": "SEP / OCT", "JTPE": "JUN & NOV",
