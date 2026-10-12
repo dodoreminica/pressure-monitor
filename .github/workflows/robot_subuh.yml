@@ -2,17 +2,17 @@ name: Robot Scraper Subuh
 
 # KAPAN ROBOT INI HARUS BANGUN?
 on:
-  schedule:
-    # Target Tiba: ~08:00 Pagi WIB.
-    # Disetel bangun jam 06:27 Pagi WIB = Jam 23:27 UTC (hari sebelumnya)
-    # Trik menit ganjil (27) agar bebas antrean
-    - cron: '27 23 * * 0-4' 
+ schedule:
+    # SESI PAGI (Target Tiba: ~08:00 Pagi WIB)
+    # Dimajukan ke jam 20:27 UTC (03:27 Dini Hari WIB) 
+    # Mengantisipasi antrean server malam/pagi yang sering delay 3-4 jam
+    - cron: '27 20 * * 0-4' 
     
-    # Target Tiba: Sebelum 18:00 WIB (Persiapan Pasar US)
-    # Disetel bangun jam 15:17 Sore WIB = Jam 08:17 UTC 
-    # Dimajukan 1 jam lebih awal untuk menghindari antrean server GitHub
-    - cron: '17 8 * * 1-5'
-
+    # SESI SORE (Target Tiba: Sebelum 18:00 WIB untuk Persiapan Pasar US)
+    # Dimajukan ke jam 05:17 UTC (12:17 Siang WIB)
+    # Mengantisipasi jam sibuk server sore hari agar tidak telat sampai malam
+    - cron: '17 5 * * 1-5'
+    
   # Fitur tambahan untuk mempermudah tes jalankan manual dari tab Actions
   workflow_dispatch:
 
