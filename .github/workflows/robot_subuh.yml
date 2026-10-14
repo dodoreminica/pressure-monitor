@@ -2,7 +2,7 @@ name: Robot Scraper Subuh
 
 # KAPAN ROBOT INI HARUS BANGUN?
 on:
- schedule:
+  schedule:
     # SESI PAGI (Target Tiba: ~08:00 Pagi WIB)
     # Dimajukan ke jam 20:27 UTC (03:27 Dini Hari WIB) 
     # Mengantisipasi antrean server malam/pagi yang sering delay 3-4 jam
