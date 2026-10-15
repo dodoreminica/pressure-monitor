@@ -99,7 +99,7 @@ teks_bom_waktu = "\n".join(pesan_bom_list)
 print("="*90)
 
 # ==============================================================================
-# TAHAP 2.5: RUANG KONFIGURASI DATA MAKRO (AUTO-UPDATE FRED DAILY & MANUAL ID)
+# TAHAP 2.5: RUANG KONFIGURASI DATA MAKRO (AUTO-UPDATE FRED MoM & MANUAL ID)
 # ==============================================================================
 print("\nMenarik data Makroekonomi AS terbaru dari server Federal Reserve (FRED)...")
 try:
@@ -112,34 +112,37 @@ try:
     fed_upper = df_fed_u.iloc[-1, 0]
     fed_lower = df_fed_l.iloc[-1, 0]
     tgl_fed = df_fed_u.index[-1].strftime('%d %b %Y')
-    
-    fed_rate_str = f"{fed_lower:.2f}% - {fed_upper:.2f}% (Rilis: {tgl_fed} | Target: 2.00%)"
+    fed_rate_str = f"{fed_lower:.2f}% - {fed_upper:.2f}% (Rilis: {tgl_fed})"
 
     # 2. Pengangguran AS (Unemployment Rate)
     df_unemp = web.DataReader('UNRATE', 'fred', start_d, hari_ini_date)
     unemp_sekarang = df_unemp.iloc[-1, 0]
     tgl_unemp_sekarang = df_unemp.index[-1].strftime('%d %b %Y')
     unemp_sebelumnya = df_unemp.iloc[-2, 0]
-    tgl_unemp_sebelumnya = df_unemp.index[-2].strftime('%d %b %Y')
 
-    # 3. Inflasi AS (CPI YoY)
+    # 3. Inflasi Konsumen (CPI MoM)
     cpi_data = web.DataReader('CPIAUCSL', 'fred', start_d, hari_ini_date)
-    cpi_sekarang = cpi_data.iloc[-1, 0]
     tgl_cpi_sekarang = cpi_data.index[-1].strftime('%d %b %Y')
-    cpi_bln_lalu = cpi_data.iloc[-2, 0]
-    tgl_cpi_sebelumnya = cpi_data.index[-2].strftime('%d %b %Y')
     
-    cpi_thn_lalu = cpi_data.iloc[-13, 0]
-    cpi_yoy_sekarang = ((cpi_sekarang - cpi_thn_lalu) / cpi_thn_lalu) * 100
-    cpi_yoy_sebelumnya = ((cpi_bln_lalu - cpi_data.iloc[-14, 0]) / cpi_data.iloc[-14, 0]) * 100
+    # Rumus MoM: ((Bulan Ini - Bulan Lalu) / Bulan Lalu) * 100
+    cpi_mom_sekarang = ((cpi_data.iloc[-1, 0] - cpi_data.iloc[-2, 0]) / cpi_data.iloc[-2, 0]) * 100
+    cpi_mom_sebelumnya = ((cpi_data.iloc[-2, 0] - cpi_data.iloc[-3, 0]) / cpi_data.iloc[-3, 0]) * 100
+
+    # 4. Inflasi Produsen (PPI Final Demand MoM)
+    df_ppi = web.DataReader('PPIFIS', 'fred', start_d, hari_ini_date)
+    tgl_ppi_sekarang = df_ppi.index[-1].strftime('%d %b %Y')
+    
+    ppi_mom_sekarang = ((df_ppi.iloc[-1, 0] - df_ppi.iloc[-2, 0]) / df_ppi.iloc[-2, 0]) * 100
+    ppi_mom_sebelumnya = ((df_ppi.iloc[-2, 0] - df_ppi.iloc[-3, 0]) / df_ppi.iloc[-3, 0]) * 100
 
     makro_us = {
         "Suku Bunga The Fed (Target Range)": fed_rate_str,
-        "Inflasi Tahunan (CPI YoY)": f"{cpi_yoy_sekarang:.2f}% (Rilis: {tgl_cpi_sekarang} | Sebelumnya: {cpi_yoy_sebelumnya:.2f}% per {tgl_cpi_sebelumnya} | Target: 2.00%)",
-        "Pengangguran AS (Unemployment)": f"{unemp_sekarang:.2f}% (Rilis: {tgl_unemp_sekarang} | Sebelumnya: {unemp_sebelumnya:.2f}% per {tgl_unemp_sebelumnya})"
+        "Inflasi Konsumen (CPI MoM)": f"{cpi_mom_sekarang:+.2f}% (Rilis: {tgl_cpi_sekarang} | Sebelumnya: {cpi_mom_sebelumnya:+.2f}%)",
+        "Inflasi Produsen (PPI MoM)": f"{ppi_mom_sekarang:+.2f}% (Rilis: {tgl_ppi_sekarang} | Sebelumnya: {ppi_mom_sebelumnya:+.2f}%)",
+        "Pengangguran AS (Unemployment)": f"{unemp_sekarang:.2f}% (Rilis: {tgl_unemp_sekarang} | Sebelumnya: {unemp_sebelumnya:.2f}%)"
     }
 
-    print("✅ SUKSES Tarik Data FRED Target Rate secara Real-Time:")
+    print("✅ SUKSES Tarik Data FRED MoM secara Real-Time:")
     for k, v in makro_us.items():
         print(f"   📌 {k} : {v}")
 
@@ -147,7 +150,8 @@ except Exception as e:
     print(f"⚠️ GAGAL menarik data FRED: {e}. Menggunakan data cadangan.")
     makro_us = {
         "Suku Bunga The Fed (FOMC Rate)": "3.75% - 4.00% (Fallback)",
-        "Inflasi Tahunan AS (CPI YoY)": "3.0% (Fallback | Target: 2.0%)",
+        "Inflasi Konsumen (CPI MoM)": "+0.3% (Fallback)",
+        "Inflasi Produsen (PPI MoM)": "+0.2% (Fallback)",
         "Pengangguran AS (Unemployment)": "4.1% (Fallback)"
     }
 
@@ -159,16 +163,11 @@ makro_id = {
     "Pengangguran Terbuka (BPS)": "4.65% (Rilis BPS Mei 2026 | Sebelumnya: 4.68%)"
 }
 
-print(f"\n🇮🇩 UPDATE DATA MAKRO INDONESIA (Pencarian Manual):")
-print(f"   ⚠️ {catatan_manual_id}")
-for k, v in makro_id.items():
-    print(f"   📌 {k} : {v}")
-
 # FORMAT TEKS UNTUK TELEGRAM
 teks_makro_us = "\n".join([f"📌 <b>{k}</b> :\n   └ {v}" for k, v in makro_us.items()])
 teks_makro_id = f"⚠️ <i>{catatan_manual_id}</i>\n" + "\n".join([f"📌 <b>{k}</b> :\n   └ {v}" for k, v in makro_id.items()])
-
 # ==============================================================================
+
 # TAHAP 3: MESIN DASHBOARD SPLIT-SCREEN & TREND BACAAN
 # ==============================================================================
 print("\nMenghitung kalkulasi momentum Smart Money (1D, 1W, 1M, 3M, 6M)...")
