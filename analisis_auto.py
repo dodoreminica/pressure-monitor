@@ -36,7 +36,6 @@ df_pivot = df_master.copy()
 # ==============================================================================
 hari_ini_date = datetime.date.today()
 
-# --- 1. FUNGSI AMBIL KALENDER FOREXFACTORY ---
 def ambil_kalender_forexfactory():
     url = "https://s3.amazonaws.com/forexfactory/ff_calendar_thisweek.json"
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -53,9 +52,10 @@ def ambil_kalender_forexfactory():
         print(f"⚠️ Gagal mengambil kalender ForexFactory: {e}")
     return []
 
-# --- 2. LOGIKA KALENDER KATALIS MAKRO ---
+# JADWAL KATALIS MAKRO AS (2026)
 list_nfp = [datetime.date(2026, 8, 7), datetime.date(2026, 9, 4), datetime.date(2026, 10, 2), datetime.date(2026, 11, 6), datetime.date(2026, 12, 4)]
 list_cpi = [datetime.date(2026, 8, 12), datetime.date(2026, 9, 11), datetime.date(2026, 10, 13), datetime.date(2026, 11, 12), datetime.date(2026, 12, 10)]
+list_ppi = [datetime.date(2026, 8, 13), datetime.date(2026, 9, 15), datetime.date(2026, 10, 14), datetime.date(2026, 11, 13), datetime.date(2026, 12, 11)]
 list_fomc = [datetime.date(2026, 9, 16), datetime.date(2026, 11, 4), datetime.date(2026, 12, 16)]
 
 def cari_tanggal_terdekat(daftar_tanggal):
@@ -66,7 +66,8 @@ def cari_tanggal_terdekat(daftar_tanggal):
 
 jadwal_bom_waktu = {
     "NFP (Data Tenaga Kerja AS)": cari_tanggal_terdekat(list_nfp),
-    "CPI (Data Inflasi AS)": cari_tanggal_terdekat(list_cpi),
+    "CPI (Inflasi Konsumen AS)": cari_tanggal_terdekat(list_cpi),
+    "PPI (Inflasi Produsen AS)": cari_tanggal_terdekat(list_ppi),
     "FOMC (Penentuan Suku Bunga)": cari_tanggal_terdekat(list_fomc)
 }
 
@@ -93,8 +94,7 @@ for event, tanggal in jadwal_bom_waktu.items():
 
 if not pesan_bom_list:
     pesan_bom_list.append("✅ <b>JALUR BERSIH:</b> Tidak ada bom waktu terdeteksi.")
-
-# DEKLARASI TEKS_BOM_WAKTU (Wajib ada agar pesan_part1 tidak crash)
+    
 teks_bom_waktu = "\n".join(pesan_bom_list)
 print("="*90)
 
