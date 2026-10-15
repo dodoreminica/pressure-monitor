@@ -329,7 +329,7 @@ daftar_saham = {
     "AADI": "JUN & NOV", "ADRO": "MAY & DEC", "AKRA": "MAY & AUG", "BSSR": "JAN & JUN & NOV",
     "BUMI": "-", "BYAN": "JUN / DEC", "ELSA": "JUN", "ENRG": "-", "GEMS": "JUN",
     "INDY": "JUN / MAY", "ITMG": "APR & NOV", "KKGI": "JUN & DEC", "MCOL": "MAY & NOV",
-    "MEDC": "JUN & NOV", "MYOH": "JUN", "PTBA": "JUN", "SICO": "APR & NOV /DEC", "TOBA": "MAY",
+    "MEDC": "JUN & NOV", "MYOH": "JUN", "PKPK": "-", "PTBA": "JUN", "SICO": "APR & NOV /DEC", "TOBA": "MAY",
     
     # SEKTOR BARANG BAKU
     "AMMN": "-", "ANTM": "JUN", "AVIA": "APR & NOV", "BRMS": "-", "BRPT": "JUN",
