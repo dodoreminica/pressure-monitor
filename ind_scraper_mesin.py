@@ -267,6 +267,7 @@ def scrape_full_data(ticker, div_time_manual):
         'Total Liabilities': parse_angka(kamus_bs.get('Total Liabilities'), True),
         'Long Term Liabilities': parse_angka(kamus_bs.get('Long-Term Debt', kamus_bs.get('Total Long-Term Liabilities')), True),
         'Shareholders Equity': parse_angka(kamus_bs.get("Shareholders' Equity", kamus_bs.get('Total Equity')), True),
+        'Book Value Per Share': parse_angka(kamus_bs.get('Book Value Per Share'), True),
         'Interest Expense': parse_angka(kamus_is.get('Interest Expense', kamus_is.get('Interest Expense / Income')), True),
         'Operating Cash Flow': parse_angka(kamus_cf.get('Operating Cash Flow'), True),
         'Investing Cash Flow': parse_angka(kamus_cf.get('Investing Cash Flow', kamus_cf.get('Cash Flow from Investing')), True),
