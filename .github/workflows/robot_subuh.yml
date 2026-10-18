@@ -46,23 +46,27 @@ jobs:
         python scraper_mesin.py
         python analisis_auto.py
 
+
     - name: 5. Simpan Hasil CSV Kembali ke Gudang
       run: |
         git config --global user.name "Robot Scraper"
         git config --global user.email "robot@github.com"
         
-        # 1. Tandai file CSV yang berubah
+        # 1. Ambil update terbaru dari server dulu sebelum add/commit
+        git fetch origin main
+        git rebase origin/main || git rebase --abort
+        
+        # 2. Tandai file CSV yang berubah
         git add pressure_6mo_history.csv
         
-        # 2. Cek apakah ada perubahan data
+        # 3. Cek apakah ada perubahan data aktual
         if git diff --cached --quiet; then
-          echo "Tidak ada perubahan data untuk di-commit."
+          echo "Tidak ada perubahan data baru untuk di-commit."
           exit 0
         fi
         
-        # 3. Commit perubahan lokal terlebih dahulu
-        git commit -m "Update data harian otomatis jam 5 Pagi"
+        # 4. Commit perubahan lokal
+        git commit -m "Update data harian otomatis (Anti-Conflict)" || echo "Commit dilewati"
         
-        # 4. Tarik update remote dan push
-        git pull --rebase origin main
+        # 5. Push ke server aman
         git push origin HEAD:main
