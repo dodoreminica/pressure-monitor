@@ -52,21 +52,20 @@ jobs:
         git config --global user.name "Robot Scraper"
         git config --global user.email "robot@github.com"
         
-        # 1. Ambil update terbaru dari server dulu sebelum add/commit
-        git fetch origin main
-        git rebase origin/main || git rebase --abort
+        # 1. Masukkan semua perubahan file dari Python ke staging area
+        git add -A
         
-        # 2. Tandai file CSV yang berubah
-        git add pressure_6mo_history.csv
-        
-        # 3. Cek apakah ada perubahan data aktual
+        # 2. Cek apakah ada perubahan data aktual
         if git diff --cached --quiet; then
           echo "Tidak ada perubahan data baru untuk di-commit."
           exit 0
         fi
         
-        # 4. Commit perubahan lokal
-        git commit -m "Update data harian otomatis (Anti-Conflict)" || echo "Commit dilewati"
+        # 3. Commit perubahan lokal agar working tree bersih dari uncommitted changes
+        git commit -m "Update data harian otomatis (Anti-Error)" || echo "Commit dilewati"
         
-        # 5. Push ke server aman
+        # 4. Tarik update terbaru dari remote menggunakan pull --rebase
+        git pull --rebase origin main || (git rebase --abort && exit 1)
+        
+        # 5. Push kembali ke repository utama
         git push origin HEAD:main
