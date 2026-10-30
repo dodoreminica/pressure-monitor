@@ -345,7 +345,7 @@ daftar_saham = {
     "ABMM": "MAY", "ASII": "MAY & OCT", "HEXA": "SEP / OCT", "JTPE": "JUN & NOV",
     "KBLI": "MAY & AUG", "KUAS": "JUN / MAY", "MSJA": "JUN", "PBSA": "JUN",
     "SCCO": "JUN", "SKRN": "MAY / JUN & NOV", "TOTL": "MAY", "UNTR": "MAY & OCT",
-    "CARS": "-", "GJTL": "JUN / JUL", "MPPA": "-",
+    "CARS": "-", "GJTL": "JUN / JUL", "MPPA": "-", "SEMA": "-", "CHIP": "-",
 
     # KONSUMEN PRIMER
     "AALI": "MAY & OCT", "AMRT": "MAY", "BUDI": "JUN & NOV", "CLEO": "JUN", "CMRY": "JUN",
