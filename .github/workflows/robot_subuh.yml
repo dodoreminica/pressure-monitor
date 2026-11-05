@@ -46,25 +46,26 @@ jobs:
         python scraper_mesin.py
         python analisis_auto.py
 
-    - name: 5. Simpan Hasil CSV Kembali ke Gudang (Anti-Conflict)
+    - name: 5. Simpan Hasil CSV Kembali ke Gudang
       run: |
         git config --global user.name "Robot Scraper"
         git config --global user.email "robot@github.com"
         
-        # 1. Ambil update terbaru dari remote terlebih dahulu untuk menghindari bentrok
-        git pull --rebase origin main || git rebase --abort
+        # 1. Ambil dan sinkronkan dengan update terbaru dari GitHub terlebih dahulu
+        git fetch origin main
+        git rebase origin/main || git rebase --abort
         
-        # 2. Tambahkan file CSV yang baru digenerate oleh Python
+        # 2. Masukkan file CSV hasil scraping terbaru ke staging area
         git add pressure_6mo_history.csv
         
-        # 3. Cek apakah ada perubahan aktual
+        # 3. Cek apakah ada perubahan data aktual
         if git diff --cached --quiet; then
           echo "Tidak ada perubahan data baru untuk di-commit."
           exit 0
         fi
         
-        # 4. Commit perubahan
-        git commit -m "Update data harian otomatis (Force Sync)" || echo "Commit dilewati"
+        # 4. Commit perubahan lokal
+        git commit -m "Update data harian otomatis (Anti-Conflict)"
         
-        # 5. Push ke main (Gunakan --force-with-lease jika masih ada penolakan riwayat)
+        # 5. Push kembali ke cabang main
         git push origin HEAD:main
