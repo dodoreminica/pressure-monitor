@@ -40,8 +40,12 @@ jobs:
       
     - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
       env:
-        TGRAM_COUNTER: ${{ secrets.TGRAM_COUNTER }}
-        TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
+        # Memuat Secret TradingView
+          TDV_TAG: ${{ secrets.TDV_TAG }}
+          TDV_COUNTER: ${{ secrets.TDV_COUNTER }}
+          # Memuat Secret Telegram
+          TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
+          TGRAM_COUNTER: ${{ secrets.TGRAM_COUNTER }}
       run: |
         python scraper_mesin.py
         python analisis_auto.py
