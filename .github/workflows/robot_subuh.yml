@@ -4,13 +4,9 @@ name: Robot Scraper Subuh
 on:
   schedule:
     # SESI PAGI (Target Tiba: ~08:00 Pagi WIB)
-    # Dimajukan ke jam 20:27 UTC (03:27 Dini Hari WIB) 
-    # Mengantisipasi antrean server malam/pagi yang sering delay 3-4 jam
-    - cron: '27 20 * * 0-4' 
+    - cron: '27 20 * * 0-4'  
     
     # SESI SORE (Target Tiba: Sebelum 18:00 WIB untuk Persiapan Pasar US)
-    # Dimajukan ke jam 05:17 UTC (12:17 Siang WIB)
-    # Mengantisipasi jam sibuk server sore hari agar tidak telat sampai malam
     - cron: '17 5 * * 1-5'
     
   # Fitur tambahan untuk mempermudah tes jalankan manual dari tab Actions
@@ -35,21 +31,20 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: 3. Pasang Onderdil (Install Library)
-      run: pip install --upgrade yfinance pandas pytz requests urllib3 ipython jinja2 pandas-datareader
+    - name: 3. Pasang Onderdil (Install Library Termasuk tvDatafeed)
+      run: pip install --upgrade pandas pytz requests urllib3 ipython jinja2 pandas-datareader tvDatafeed
       
     - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
       env:
         # Memuat Secret TradingView
-          TDV_TAG: ${{ secrets.TDV_TAG }}
-          TDV_COUNTER: ${{ secrets.TDV_COUNTER }}
-          # Memuat Secret Telegram
-          TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
-          TGRAM_COUNTER: ${{ secrets.TGRAM_COUNTER }}
+        TDV_TAG: ${{ secrets.TDV_TAG }}
+        TDV_COUNTER: ${{ secrets.TDV_COUNTER }}
+        # Memuat Secret Telegram
+        TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
+        TGRAM_COUNTER: ${{ secrets.TGRAM_COUNTER }}
       run: |
         python scraper_mesin.py
         python analisis_auto.py
-
 
     - name: 5. Simpan Hasil CSV Kembali ke Gudang
       run: |
@@ -65,11 +60,9 @@ jobs:
           exit 0
         fi
         
-        # 3. Commit perubahan lokal agar working tree bersih dari uncommitted changes
+        # 3. Commit perubahan lokal
         git commit -m "Update data harian otomatis (Anti-Error)" || echo "Commit dilewati"
         
-        # 4. Tarik update terbaru dari remote menggunakan pull --rebase
+        # 4. Tarik update terbaru dan push kembali ke cabang main
         git pull --rebase origin main || (git rebase --abort && exit 1)
-        
-        # 5. Push kembali ke repository utama
         git push origin HEAD:main
