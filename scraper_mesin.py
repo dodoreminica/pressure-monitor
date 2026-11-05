@@ -148,6 +148,21 @@ df_master.to_csv(nama_file, index=False)
 print(f"\n[SUKSES] Data Historis Makro & Kurs Silang telah disimpan menjadi: {nama_file}")
 
 # ==============================================================================
+# AUDIT FORENSIK: DETEKSI DATA BASI (ANTI-STALE DATA)
+# ==============================================================================
+tanggal_paling_atas = df_master['Tanggal_Pasar'].iloc[0]
+tanggal_hari_ini = datetime.now(waktu_jakarta).strftime('%Y-%m-%d')
+
+print(f"\n🔍 [AUDIT] Tanggal Sistem: {tanggal_hari_ini}")
+print(f"🔍 [AUDIT] Tanggal Baris Puncak Data: {tanggal_paling_atas}")
+
+if tanggal_paling_atas != tanggal_hari_ini:
+    print(f"🚨 [PERINGATAN KERAS] Data Yahoo Finance BELUM UPDATE! Menampilkan data terakhir tanggal: {tanggal_paling_atas}")
+    print(f"💡 Solusi: Jangan percaya angka mentah hari ini karena Yahoo Finance sedang mengalami latensi/delay.")
+else:
+    print("✅ [VALIDASI] Data terkonfirmasi *up-to-date* hari ini.")
+
+# ==============================================================================
 # TAHAP 6: MENAMPILKAN HASIL DALAM 3 TABEL (SPLIT)
 # ==============================================================================
 print("\n" + "="*90)
