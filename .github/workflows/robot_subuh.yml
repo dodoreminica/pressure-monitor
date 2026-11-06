@@ -29,10 +29,13 @@ jobs:
     - name: 2. Siapkan Mesin Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.11'
 
-    - name: 3. Pasang Onderdil (Install Library Termasuk tvDatafeed)
-      run: pip install --upgrade pandas pytz requests urllib3 ipython jinja2 pandas-datareader tvDatafeed
+    - name: 3. Pasang Onderdil (Install Library & tvDatafeed dari GitHub)
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas pytz requests urllib3 ipython jinja2 pandas-datareader
+        pip install git+https://github.com/rongardasilva/tvDatafeed.git
       
     - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
       env:
