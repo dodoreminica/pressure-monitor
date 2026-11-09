@@ -4,9 +4,13 @@ name: Robot Scraper Subuh
 on:
   schedule:
     # SESI PAGI (Target Tiba: ~08:00 Pagi WIB)
-    - cron: '27 20 * * 0-4'  
+    # Dimajukan ke jam 20:27 UTC (03:27 Dini Hari WIB) 
+    # Mengantisipasi antrean server malam/pagi yang sering delay 3-4 jam
+    - cron: '27 20 * * 0-4' 
     
     # SESI SORE (Target Tiba: Sebelum 18:00 WIB untuk Persiapan Pasar US)
+    # Dimajukan ke jam 05:17 UTC (12:17 Siang WIB)
+    # Mengantisipasi jam sibuk server sore hari agar tidak telat sampai malam
     - cron: '17 5 * * 1-5'
     
   # Fitur tambahan untuk mempermudah tes jalankan manual dari tab Actions
@@ -29,46 +33,39 @@ jobs:
     - name: 2. Siapkan Mesin Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.10'
 
-    - name: 3. Pasang Onderdil (Install Library & tvDatafeed via HTTP Zip)
-      run: |
-        python -m pip install --upgrade pip
-        pip install pandas pytz requests urllib3 ipython jinja2 pandas-datareader
-        pip install https://github.com/rongardasilva/tvDatafeed/archive/refs/heads/main.zip
+    - name: 3. Pasang Onderdil (Install Library)
+      run: pip install --upgrade yfinance pandas pytz requests urllib3 ipython jinja2 pandas-datareader
       
     - name: 4. Tekan Tombol RUN Mesin Scraper & Analisis!
       env:
-        # Memuat Secret TradingView
-        TDV_TAG: ${{ secrets.TDV_TAG }}
-        TDV_COUNTER: ${{ secrets.TDV_COUNTER }}
-        # Memuat Secret Telegram
-        TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
-        TGRAM_COUNTER: ${{ secrets.TGRAM_COUNTER }}
+          TGRAM_TAG: ${{ secrets.TGRAM_TAG }}
+          TGRAM_COUNTER: ${{ secrets.TGRAM_COUNTER }}
       run: |
         python scraper_mesin.py
         python analisis_auto.py
+
 
     - name: 5. Simpan Hasil CSV Kembali ke Gudang
       run: |
         git config --global user.name "Robot Scraper"
         git config --global user.email "robot@github.com"
         
-        # 1. Ambil dan sinkronkan dengan update terbaru dari GitHub terlebih dahulu
-        git fetch origin main
-        git rebase origin/main || git rebase --abort
+        # 1. Masukkan semua perubahan file dari Python ke staging area
+        git add -A
         
-        # 2. Masukkan file CSV hasil scraping terbaru ke staging area
-        git add pressure_6mo_history.csv
-        
-        # 3. Cek apakah ada perubahan data aktual
+        # 2. Cek apakah ada perubahan data aktual
         if git diff --cached --quiet; then
           echo "Tidak ada perubahan data baru untuk di-commit."
           exit 0
         fi
         
-        # 4. Commit perubahan lokal
-        git commit -m "Update data harian otomatis (Anti-Conflict)"
+        # 3. Commit perubahan lokal agar working tree bersih dari uncommitted changes
+        git commit -m "Update data harian otomatis (Anti-Error)" || echo "Commit dilewati"
         
-        # 5. Push kembali ke cabang main
+        # 4. Tarik update terbaru dari remote menggunakan pull --rebase
+        git pull --rebase origin main || (git rebase --abort && exit 1)
+        
+        # 5. Push kembali ke repository utama
         git push origin HEAD:main
