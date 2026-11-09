@@ -7,7 +7,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import warnings
-from IPython.display import display 
+import os
 
 warnings.filterwarnings('ignore')
 
@@ -73,7 +73,7 @@ kumpulan_series = {}
 for nama_aset, kode_ticker in daftar_aset.items():
     print(f"Menyedot rekam jejak 1 TAHUN dari: {nama_aset} ({kode_ticker})...")
     try:
-        df_hist = yf.download(kode_ticker, period="1y", progress=False, auto_adjust=True)
+        df_hist = yf.download(kode_ticker, period="1y", progress=False, auto_adjust=True, session=session)
 
         if not df_hist.empty:
             close_data = df_hist['Close']
@@ -107,17 +107,18 @@ df_master = df_master.reindex(kalender_bursa)
 df_master = df_master.ffill().bfill()
 
 # ==============================================================================
-# TAHAP 4.5: MESIN PENGHITUNG KURS SILANG (CROSS-RATES & CONVERSION)
+# TAHAP 4.5: MESIN PENGHITUNG KURS SILANG & KONVERSI EMAS PER GRAM
 # ==============================================================================
 print("🧮 Melakukan kalkulasi Kurs Silang (Cross-Rates) ke Rupiah...")
 
-# Menghitung JPY ke IDR secara manual (Karenya YF sering gagal menarik JPYIDR=X langsung)
+# Menghitung JPY ke IDR secara manual
 if 'USD_JPY' in df_master.columns and 'USD_IDR' in df_master.columns:
     df_master['JPY_IDR'] = (df_master['USD_IDR'] / df_master['USD_JPY']).round(2)
 
-# Mengkonversi Emas USD ke Rupiah
+# Mengkonversi Emas USD (per Troy Ounce) ke Rupiah PER GRAM
+# Rumus: (Harga USD per Troy Ounce * Kurs USDIDR) / 31.1035 gram
 if 'Gold_XAU_USD' in df_master.columns and 'USD_IDR' in df_master.columns:
-    df_master['Gold_XAU_IDR'] = (df_master['Gold_XAU_USD'] * df_master['USD_IDR']).round(0)
+    df_master['Gold_XAU_IDR'] = ((df_master['Gold_XAU_USD'] * df_master['USD_IDR']) / 31.1035).round(0)
 
 # ==============================================================================
 # TAHAP 5: FINISHING, SORTING & EKSPOR CSV
@@ -136,59 +137,11 @@ kolom_ekstra = []
 if 'JPY_IDR' in df_master.columns: kolom_ekstra.append('JPY_IDR')
 if 'Gold_XAU_IDR' in df_master.columns: kolom_ekstra.append('Gold_XAU_IDR')
 
-# 👇👇👇 PERBAIKAN ANTI-ERROR (Filter Kolom Aman) 👇👇👇
 kolom_urut_target = ['Timestamp_Mesin', 'Tanggal_Pasar'] + list(daftar_aset.keys()) + kolom_ekstra
 kolom_urut_aman = [col for col in kolom_urut_target if col in df_master.columns]
 df_master = df_master[kolom_urut_aman]
-# 👆👆👆 ======================================== 👆👆👆
 
 nama_file = "pressure_6mo_history.csv"
 df_master.to_csv(nama_file, index=False)
 
 print(f"\n[SUKSES] Data Historis Makro & Kurs Silang telah disimpan menjadi: {nama_file}")
-
-# ==============================================================================
-# AUDIT FORENSIK: DETEKSI DATA BASI (ANTI-STALE DATA)
-# ==============================================================================
-tanggal_paling_atas = df_master['Tanggal_Pasar'].iloc[0]
-tanggal_hari_ini = datetime.now(waktu_jakarta).strftime('%Y-%m-%d')
-
-print(f"\n🔍 [AUDIT] Tanggal Sistem: {tanggal_hari_ini}")
-print(f"🔍 [AUDIT] Tanggal Baris Puncak Data: {tanggal_paling_atas}")
-
-if tanggal_paling_atas != tanggal_hari_ini:
-    print(f"🚨 [PERINGATAN KERAS] Data Yahoo Finance BELUM UPDATE! Menampilkan data terakhir tanggal: {tanggal_paling_atas}")
-    print(f"💡 Solusi: Jangan percaya angka mentah hari ini karena Yahoo Finance sedang mengalami latensi/delay.")
-else:
-    print("✅ [VALIDASI] Data terkonfirmasi *up-to-date* hari ini.")
-
-# ==============================================================================
-# TAHAP 6: MENAMPILKAN HASIL DALAM 3 TABEL (SPLIT)
-# ==============================================================================
-print("\n" + "="*90)
-print("MEMECAH TABEL MENJADI 3 KLASTER UNTUK ANALISIS...")
-print("="*90)
-
-klaster_makro = ['Tanggal_Pasar', 'US_10Y_Yield', 'US_2Y_Futures','VIX_Fear','Bitcoin', 'DXY_Index', 'USD_IDR', 'USD_SGD', 'USD_JPY', 'JPY_IDR', 'USD_CNY']
-klaster_us_tech = ['Tanggal_Pasar', 'Nasdaq_IXIC', 'Semicon_SOXX', 'Software_IGV', 'CyberSec_CIBR', 'Biotech_IBB', 'Power_XLU', 'Energy_XLE']
-klaster_em_komoditas = ['Tanggal_Pasar', 'IHSG_Indo', 'Indo_Foreign_Flow', 'Indeks_Komoditas', 'Gold_XAU_USD', 'Gold_XAU_IDR', 'Minyak_Bumi_WTI', 'Minyak_Bumi_Brent', 'Minyak_Sawit_CPO', 'Batu_Bara', 'Tembaga_Copper', 'RareEarth_REMX', 'Gas_Alam', 'Minyak_Kedelai']
-
-# 👇👇👇 PERBAIKAN ANTI-ERROR (Hanya memotong tabel jika kolomnya ada) 👇👇👇
-klaster_makro_aman = [c for c in klaster_makro if c in df_master.columns]
-klaster_us_tech_aman = [c for c in klaster_us_tech if c in df_master.columns]
-klaster_em_komoditas_aman = [c for c in klaster_em_komoditas if c in df_master.columns]
-
-df_makro = df_master[klaster_makro_aman]
-df_us_tech = df_master[klaster_us_tech_aman]
-df_em_komoditas = df_master[klaster_em_komoditas_aman]
-# 👆👆👆 ============================================================ 👆👆👆
-
-# Menggunakan .head(5) karena data sudah dibalik (yang terbaru di atas)
-print("\n🌍 TABEL 1: MAKROEKONOMI & VALAS (Menampilkan 5 hari terakhir)")
-display(df_makro.head(5)) 
-
-print("\n💻 TABEL 2: US TECH & INFRASTRUKTUR AI (Menampilkan 5 hari terakhir)")
-display(df_us_tech.head(5))
-
-print("\n🇮🇩 TABEL 3: EMERGING MARKETS & KOMODITAS (Menampilkan 5 hari terakhir)")
-display(df_em_komoditas.head(5))
