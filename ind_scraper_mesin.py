@@ -353,7 +353,7 @@ daftar_saham = {
     "JPFA": "APR", "LSIP": "JUL", "MIDI": "MAY", "MLBI": "MAY / JUN & NOV", "MYOR": "MAY",
     "NSSS": "NOV", "PNGO": "JUN & NOV", "ROTI": "APR", "TAPG": "MAY & NOV",
     "TBLA": "JUN", "TLDN": "MAY & OCT", "WIIM": "JUN", "YUPI": "JUL & DEC",
-    "BWPT": "-", "GZCO": "-", "SIMP": "JUL", "STAA": "MAY & OCT",
+    "BWPT": "-", "GZCO": "-", "SIMP": "JUL", "STAA": "MAY & OCT", "SSMS": "MAY & OCT",
 
     # KONSUMEN NON-PRIMER
     "ACES": "JUN", "AUTO": "MAY & OCT", "EAST": "APR / JUN & DEC / JAN", "ERAA": "JUN",
